@@ -6,4 +6,5 @@ Create a virtual environment
 Activate the virtual environment
 
 > pip install -U pip
+
 > pip install -r requirements.txt
