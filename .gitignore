@@ -2,3 +2,5 @@ venv*/
 *.ipynb
 .ipynb_checkpoints/
 .vscode/
+datasets/
+*.pyc
