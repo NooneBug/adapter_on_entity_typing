@@ -1,0 +1,6 @@
+README.md
+setup.py
+adapter_entity_typing.egg-info/PKG-INFO
+adapter_entity_typing.egg-info/SOURCES.txt
+adapter_entity_typing.egg-info/dependency_links.txt
+adapter_entity_typing.egg-info/top_level.txt

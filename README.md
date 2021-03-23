@@ -9,7 +9,7 @@ curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 
 Then, create a virtual environment and install required libraries:
 ``` sh
-python -m venv venv
+python3 -m venv venv
 source venv/bin/activate
 pip install -U pip
 pip install -r requirements.txt

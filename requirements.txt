@@ -1,2 +1,4 @@
-datasets == 1.5
 packaging == 20.9
+datasets == 1.5
+torch  == 1.7.1
+adapter-transformers == 1.1.1
