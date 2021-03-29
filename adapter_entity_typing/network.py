@@ -48,7 +48,9 @@ def read_parameters(experiment: str = "DEFAULT",
         "Patience":            int,     # patience befor early stop
         "MaxEpoch":            int,     # (maximum) number of training epoches
         "BatchSize":           int,     # batch size for both training and inference
-        "LearningRate":        float }  # learning rate
+        "LearningRate":        float,   # learning rate
+        "MaxContextSideSize":  int,     # max number of words in right and left context
+        }
     #
     def get_parameter(p: str):
         nonlocal config, parameter_type

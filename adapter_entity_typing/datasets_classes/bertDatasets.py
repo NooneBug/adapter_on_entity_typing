@@ -18,7 +18,7 @@ class BertDataset(Dataset):
         t = time.time()
         self.tokenized_sent, self.attn_masks = [], []
         for s in self.sent:
-            tok = self.tokenizer(s, max_length = 80, truncation = True, padding="max_length")
+            tok = self.tokenizer(s, max_length = 20, truncation = True, padding="max_length")
             self.tokenized_sent.append(tok['input_ids'])
             self.attn_masks.append(tok['attention_mask'])
         # self.tokenized_sent = [self.tokenizer(s, max_length=80, truncation=True, padding="max_length")['input_ids'] for s in self.sent]

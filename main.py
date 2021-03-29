@@ -9,8 +9,8 @@ import numpy as np
 import random
 from tqdm import tqdm
 
-if torch.cuda.is_available():
-  torch.set_default_tensor_type('torch.cuda.FloatTensor')
+# if torch.cuda.is_available():
+  # torch.set_default_tensor_type('torch.cuda.FloatTensor')
 
 
 torch.manual_seed(236451)
@@ -56,9 +56,14 @@ def train(train_loader, dev_loader, model, label2id):
 
     for batch in train_loader:
       batched_sentences, batched_attn, batched_labels = batch
+      
+      if torch.cuda.is_available():
+        batched_sentences = batched_sentences.cuda()
+        batched_attn = batched_attn.cuda()
+        batched_labels = batched_labels.cuda()
     
       outputs = model(batched_sentences, attention_mask = batched_attn)
-      
+
       optimizer.zero_grad()
       loss = criterion(outputs, batched_labels)
       loss.backward()
@@ -81,7 +86,12 @@ def train(train_loader, dev_loader, model, label2id):
 
       for batch in dev_loader:
         batched_sentences, batched_attn, batched_labels = batch
-      
+
+        if torch.cuda.is_available():
+          batched_sentences = batched_sentences.cuda()
+          batched_attn = batched_attn.cuda()
+          batched_labels = batched_labels.cuda()
+
         outputs = model(batched_sentences, attention_mask = batched_attn)
         
         optimizer.zero_grad()
@@ -97,6 +107,7 @@ def train(train_loader, dev_loader, model, label2id):
 
     if epoch == 0:
       min_loss = dev_loss
+      patience = 0
     else:
       if dev_loss < min_loss:
         min_loss = dev_loss
@@ -123,15 +134,16 @@ model = get_model('BertClassifier')
 
 train_path = model.configuration('PathInputTrain')
 dev_path = model.configuration('PathInputDev')
+max_context_side_size = model.configuration('MaxContextSideSize')
 
-train_dataset, label2id = prepare_entity_typing_dataset(train_path, load=True)
-dev_dataset, _ = prepare_entity_typing_dataset(dev_path, label2id = label2id, load=True)
+# train_dataset, label2id = prepare_entity_typing_dataset(train_path, load=True)
+# dev_dataset, _ = prepare_entity_typing_dataset(dev_path, label2id = label2id, load=True)
 
-# train_dataset, label2id = prepare_entity_typing_dataset(train_path)
-# dev_dataset, _ = prepare_entity_typing_dataset(dev_path, label2id = label2id)
+train_dataset, label2id = prepare_entity_typing_dataset(train_path, max_context_side_size = max_context_side_size)
+dev_dataset, _ = prepare_entity_typing_dataset(dev_path, label2id = label2id, max_context_side_size = max_context_side_size)
 
-# save_dataset(train_dataset, label2id, 'datasets/3_types_train.pkl')
-# save_dataset(dev_dataset, label2id, 'datasets/3_types_dev.pkl')
+save_dataset(train_dataset, label2id, 'datasets/3_types_context1_train.pkl')
+save_dataset(dev_dataset, label2id, 'datasets/3_types_context1_dev.pkl')
 
 batch_size = model.configuration('BatchSize')
 
