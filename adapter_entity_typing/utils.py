@@ -26,7 +26,7 @@ def prepare_entity_typing_dataset(path, label2id = None, load=False):
     labels, label2id = get_labels(lines, label2id=label2id)
 
     bd = BertDataset(sentences, labels, label_number = len(label2id))
-    return bd, label2id
+  return bd, label2id
 
 def get_labels(lines, label2id = None):
   example_labels = [l['y_str'] for l in lines]

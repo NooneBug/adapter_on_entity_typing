@@ -104,11 +104,11 @@ model = get_model('BertClassifier')
 train_path = model.configuration('PathInputTrain')
 dev_path = model.configuration('PathInputDev')
 
-train_dataset, label2id = prepare_entity_typing_dataset(train_path)
-dev_dataset, _ = prepare_entity_typing_dataset(dev_path, label2id = label2id)
-
 train_dataset, label2id = prepare_entity_typing_dataset(train_path, load=True)
 dev_dataset, _ = prepare_entity_typing_dataset(dev_path, label2id = label2id, load=True)
+
+# train_dataset, label2id = prepare_entity_typing_dataset(train_path)
+# dev_dataset, _ = prepare_entity_typing_dataset(dev_path, label2id = label2id)
 
 # save_dataset(train_dataset, label2id, 'datasets/3_types_train.pkl')
 # save_dataset(dev_dataset, label2id, 'datasets/3_types_dev.pkl')
