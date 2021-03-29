@@ -1,6 +1,6 @@
 from torch.nn.modules.loss import BCELoss
 from torch.utils.data.dataloader import DataLoader
-from adapter_entity_typing.utils import prepare_entity_typing_dataset, save_dataset
+from adapter_entity_typing.utils import prepare_entity_typing_dataset, save_dataset, get_discrete_pred, compute_metrics
 from adapter_entity_typing.network import get_model, add_classifier
 from torch.utils.data import DataLoader
 from torch.optim import Adam
@@ -33,6 +33,7 @@ torch.backends.cudnn.deterministic=True
 
 def train(train_loader, dev_loader, model, label2id):
   add_classifier(model = model, labels = label2id)
+  id2label = {v: k for k, v in label2id.items()}
   
   if torch.cuda.is_available():
     model.to('cuda')
@@ -84,6 +85,9 @@ def train(train_loader, dev_loader, model, label2id):
       dev_running_loss = 0.0
       dev_steps = 0
 
+      all_discrete_preds = []
+      all_labels = [] 
+
       for batch in dev_loader:
         batched_sentences, batched_attn, batched_labels = batch
 
@@ -100,27 +104,37 @@ def train(train_loader, dev_loader, model, label2id):
 
         dev_steps += 1
       
+        discrete_pred = get_discrete_pred(outputs.detach().cpu().numpy(), id2label=id2label)
+        discrete_lab = get_discrete_pred(batched_labels.detach().cpu().numpy(), id2label=id2label)
+
+        all_discrete_preds.extend(discrete_pred)
+        all_labels.extend(discrete_lab)
+
         bar.update(1)
       
     bar.close()
     dev_loss = dev_running_loss / dev_steps
 
+    avg_pred_number, void_prediction_counter, micro_p, micro_r, micro_f1, macro_p, macro_r, macro_f1 = compute_metrics(all_discrete_preds, 
+                                                                                                                        all_labels)
+
     if epoch == 0:
-      min_loss = dev_loss
+      best_macro_f1 = macro_f1
       patience = 0
     else:
-      if dev_loss < min_loss:
-        min_loss = dev_loss
+      if macro_f1 > best_macro_f1:
+        best_macro_f1 = macro_f1
         patience = 0
-      elif patience > max_patience:
-        early_stop = True
-      else:
+      else: 
         patience += 1
+        if patience >= max_patience:
+          early_stop = True
 
-    print('epoch: {}; loss: {:.2f}; val_loss: {:.2f}; min_val_loss: {:.2f}, patience: {}'.format(epoch, 
+    print('epoch: {}; loss: {:.2f}; val_loss: {:.2f}; macro_f1: {:.2f}; best_macro_f1: {:.2f}, patience: {}'.format(epoch, 
                                                                                               loss, 
                                                                                               dev_loss, 
-                                                                                              min_loss,
+                                                                                              macro_f1,
+                                                                                              best_macro_f1,
                                                                                               patience))
     
     if early_stop:

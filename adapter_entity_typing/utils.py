@@ -1,6 +1,7 @@
 from adapter_entity_typing.datasets_classes.bertDatasets import BertDataset
 import json
 import pickle
+import torch
 
 def save_dataset(dataset, label2id, path):
   with open(path, 'wb') as out:
@@ -49,8 +50,75 @@ def get_sentences(lines, max_context_side_size = -1):
       sents.append(sent)
     return sents
 
-if __name__== "__main__":
-  path = '../typing_network/data/3_types/dev.json'
-  data, labels2id = prepare_entity_typing_dataset(path)
-  print(data)
-  print(labels2id)
+def get_discrete_pred(batched_tens, id2label):
+
+  '''
+  for each prediction: each label which likelihood is higher than .5 is inferred
+  if no likelihoods are higher than .5, the highest one is inferred
+  '''
+
+  discs = []
+  for tens in batched_tens:
+    disc = []
+    for i, elem in enumerate(tens):
+      if elem > .5:
+        disc.append(id2label[i])
+    if not disc:
+      max_v = -1
+      for i, elem in enumerate(tens):
+        if elem > max_v:
+          max_v = elem
+          max_index = i
+      disc.append(id2label[max_index])
+
+    discs.append(disc)
+  return discs
+
+
+def compute_metrics(pred_classes, true_classes):	
+    correct_counter = 0	
+    prediction_counter = 0	
+    true_labels_counter = 0	
+    precision_sum = 0	
+    recall_sum = 0	
+    f1_sum = 0	
+
+    void_prediction_counter = 0	
+
+    for example_pred, example_true in zip(pred_classes, true_classes):	
+
+        assert len(example_true) > 0, 'Error in true label traduction'	
+
+        prediction_counter += len(example_pred)	
+
+        true_labels_counter += len(example_true)	
+        correct_predictions = len(set(example_pred).intersection(set(example_true)))	
+        correct_counter += correct_predictions	
+
+        p = correct_predictions / len(example_pred)	
+        r = correct_predictions / len(example_true)	
+        f1 = compute_f1(p, r)	
+        precision_sum += p	
+        recall_sum += r	
+        f1_sum += f1
+
+    if prediction_counter:
+      micro_p = correct_counter / prediction_counter
+    else:
+      micro_p = 0
+    micro_r = correct_counter / true_labels_counter	
+    micro_f1 = compute_f1(micro_p, micro_r)	
+
+    examples_in_dataset = len(true_classes)	
+
+    macro_p = precision_sum / examples_in_dataset	
+    macro_r = recall_sum / examples_in_dataset	
+    macro_f1 = f1_sum / examples_in_dataset	
+
+    avg_pred_number = prediction_counter / examples_in_dataset	
+
+
+    return avg_pred_number, void_prediction_counter, micro_p, micro_r, micro_f1, macro_p, macro_r, macro_f1
+
+def compute_f1(p, r):	
+        return (2*p*r)/(p + r) if (p + r) else 0
