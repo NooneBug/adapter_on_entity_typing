@@ -39,6 +39,7 @@ def train(train_loader, dev_loader, model, label2id):
 
   max_epochs = model.configuration('MaxEpoch')
   lr = model.configuration('LearningRate')
+  max_patience = model.configuration('Patience')
 
   epoch = 0
   early_stop = False
@@ -94,7 +95,26 @@ def train(train_loader, dev_loader, model, label2id):
     bar.close()
     dev_loss = dev_running_loss / dev_steps
 
-    print('epoch: {}; loss: {:.2f}; val_loss: {.2f}'.format(epoch, loss, dev_loss))
+    if epoch == 0:
+      min_loss = dev_loss
+    else:
+      if dev_loss < min_loss:
+        min_loss = dev_loss
+        patience = 0
+      elif patience > max_patience:
+        early_stop = True
+      else:
+        patience += 1
+
+    print('epoch: {}; loss: {:.2f}; val_loss: {:.2f}; min_val_loss: {:.2f}, patience: {}'.format(epoch, 
+                                                                                              loss, 
+                                                                                              dev_loss, 
+                                                                                              min_loss,
+                                                                                              patience))
+    
+    if early_stop:
+      print('early stopped')
+
     epoch += 1
 
 
