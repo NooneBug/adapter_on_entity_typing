@@ -1,7 +1,8 @@
-packages:
+name: adapterenv
+dependencies:
   - packaging == 20.9
-  - datasets == 1.5
-  - torch  == 1.6.0
+  - datasets == 1.2.1
+  - pytorch-gpu  == 1.6.0
   - pip:
     - adapter-transformers
     - git+https://github.com/NooneBug/typing-model
