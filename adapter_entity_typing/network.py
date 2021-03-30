@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 from torch._C import device
-from adapter_entity_typing.network_classes.classifiers import SimpleClassifier
+from transformers.modeling_bert import BertModelWithHeads
 import configparser
 
 import torch
@@ -51,6 +51,7 @@ def read_parameters(experiment: str = "DEFAULT",
         "LearningRate":        float,   # learning rate
         "MaxContextSideSize":  int,     # max number of words in right and left context
         "MaxEntitySize":       int,     # max number of words in the entity mention (the last words will be cutted)
+        "ExperimentName":      str,     # experiment name for tensorboard
         }
     #
     def get_parameter(p: str):
@@ -68,7 +69,7 @@ def get_model(experiment_name: str,
     # https://docs.adapterhub.ml/classes/adapter_config.html#transformers.AdapterConfig
     # https://docs.adapterhub.ml/classes/model_mixins.html?highlight=add_adapter#transformers.ModelAdaptersMixin.add_adapter
     #
-    model = SimpleClassifier.from_pretrained(pretrained)
+    model = BertModelWithHeads.from_pretrained(pretrained)
     model.experiment_name = experiment_name
     model.configuration = read_parameters(model.experiment_name,
                                           config_file)
