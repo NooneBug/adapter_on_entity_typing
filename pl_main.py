@@ -87,9 +87,11 @@ for experiment in ["experiment_" + str(i) for i in range(1, 10 + 1)]:
 
   id2label = {v: k for k,v in label2id.items()}
 
+  model.freeze_model()
   add_classifier(model = model, labels = label2id)
 
   pl_wrapper = adapterPLWrapper(model, id2label, lr)
+
 
   trainer = declare_callbacks_and_trainer(early_stopping_patience=early_stopping_patience,
                                           epochs = epochs,
