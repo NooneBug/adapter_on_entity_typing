@@ -1,0 +1,109 @@
+Experiment: experiment_1
+epoch: 0; loss: 0.12; val_loss: 0.06; macro_f1: 0.70; best_macro_f1: 0.70, patience: 0
+epoch: 1; loss: 0.05; val_loss: 0.03; macro_f1: 0.84; best_macro_f1: 0.84, patience: 0
+epoch: 2; loss: 0.03; val_loss: 0.03; macro_f1: 0.88; best_macro_f1: 0.88, patience: 0
+epoch: 3; loss: 0.02; val_loss: 0.02; macro_f1: 0.89; best_macro_f1: 0.89, patience: 0
+epoch: 4; loss: 0.02; val_loss: 0.02; macro_f1: 0.89; best_macro_f1: 0.89, patience: 0
+epoch: 5; loss: 0.02; val_loss: 0.02; macro_f1: 0.89; best_macro_f1: 0.89, patience: 0
+epoch: 6; loss: 0.02; val_loss: 0.02; macro_f1: 0.89; best_macro_f1: 0.89, patience: 1
+epoch: 7; loss: 0.02; val_loss: 0.02; macro_f1: 0.89; best_macro_f1: 0.89, patience: 0
+epoch: 8; loss: 0.02; val_loss: 0.02; macro_f1: 0.90; best_macro_f1: 0.90, patience: 0
+epoch: 9; loss: 0.02; val_loss: 0.02; macro_f1: 0.91; best_macro_f1: 0.91, patience: 0
+Experiment: experiment_2
+epoch: 0; loss: 0.12; val_loss: 0.06; macro_f1: 0.67; best_macro_f1: 0.67, patience: 0
+epoch: 1; loss: 0.05; val_loss: 0.03; macro_f1: 0.83; best_macro_f1: 0.83, patience: 0
+epoch: 2; loss: 0.03; val_loss: 0.03; macro_f1: 0.87; best_macro_f1: 0.87, patience: 0
+epoch: 3; loss: 0.03; val_loss: 0.02; macro_f1: 0.87; best_macro_f1: 0.87, patience: 0
+epoch: 4; loss: 0.02; val_loss: 0.02; macro_f1: 0.89; best_macro_f1: 0.89, patience: 0
+epoch: 5; loss: 0.02; val_loss: 0.02; macro_f1: 0.90; best_macro_f1: 0.90, patience: 0
+epoch: 6; loss: 0.02; val_loss: 0.02; macro_f1: 0.90; best_macro_f1: 0.90, patience: 0
+epoch: 7; loss: 0.01; val_loss: 0.02; macro_f1: 0.90; best_macro_f1: 0.90, patience: 0
+epoch: 8; loss: 0.01; val_loss: 0.03; macro_f1: 0.90; best_macro_f1: 0.90, patience: 1
+epoch: 9; loss: 0.01; val_loss: 0.03; macro_f1: 0.90; best_macro_f1: 0.90, patience: 2
+Experiment: experiment_3
+epoch: 0; loss: 0.11; val_loss: 0.05; macro_f1: 0.72; best_macro_f1: 0.72, patience: 0
+epoch: 1; loss: 0.05; val_loss: 0.03; macro_f1: 0.84; best_macro_f1: 0.84, patience: 0
+epoch: 2; loss: 0.03; val_loss: 0.03; macro_f1: 0.87; best_macro_f1: 0.87, patience: 0
+epoch: 3; loss: 0.02; val_loss: 0.02; macro_f1: 0.90; best_macro_f1: 0.90, patience: 0
+epoch: 4; loss: 0.02; val_loss: 0.02; macro_f1: 0.89; best_macro_f1: 0.90, patience: 1
+epoch: 5; loss: 0.02; val_loss: 0.02; macro_f1: 0.90; best_macro_f1: 0.90, patience: 0
+epoch: 6; loss: 0.02; val_loss: 0.03; macro_f1: 0.90; best_macro_f1: 0.90, patience: 1
+epoch: 7; loss: 0.01; val_loss: 0.02; macro_f1: 0.91; best_macro_f1: 0.91, patience: 0
+epoch: 8; loss: 0.01; val_loss: 0.03; macro_f1: 0.90; best_macro_f1: 0.91, patience: 1
+epoch: 9; loss: 0.01; val_loss: 0.03; macro_f1: 0.90; best_macro_f1: 0.91, patience: 2
+Experiment: experiment_4
+epoch: 0; loss: 0.12; val_loss: 0.07; macro_f1: 0.60; best_macro_f1: 0.60, patience: 0
+epoch: 1; loss: 0.06; val_loss: 0.04; macro_f1: 0.81; best_macro_f1: 0.81, patience: 0
+epoch: 2; loss: 0.03; val_loss: 0.03; macro_f1: 0.88; best_macro_f1: 0.88, patience: 0
+epoch: 3; loss: 0.03; val_loss: 0.03; macro_f1: 0.88; best_macro_f1: 0.88, patience: 0
+epoch: 4; loss: 0.02; val_loss: 0.03; macro_f1: 0.88; best_macro_f1: 0.88, patience: 0
+epoch: 5; loss: 0.02; val_loss: 0.02; macro_f1: 0.89; best_macro_f1: 0.89, patience: 0
+epoch: 6; loss: 0.02; val_loss: 0.03; macro_f1: 0.88; best_macro_f1: 0.89, patience: 1
+epoch: 7; loss: 0.02; val_loss: 0.03; macro_f1: 0.90; best_macro_f1: 0.90, patience: 0
+epoch: 8; loss: 0.01; val_loss: 0.03; macro_f1: 0.90; best_macro_f1: 0.90, patience: 1
+epoch: 9; loss: 0.01; val_loss: 0.03; macro_f1: 0.90; best_macro_f1: 0.90, patience: 2
+Experiment: experiment_5
+epoch: 0; loss: 0.12; val_loss: 0.06; macro_f1: 0.71; best_macro_f1: 0.71, patience: 0
+epoch: 1; loss: 0.05; val_loss: 0.04; macro_f1: 0.84; best_macro_f1: 0.84, patience: 0
+epoch: 2; loss: 0.03; val_loss: 0.03; macro_f1: 0.88; best_macro_f1: 0.88, patience: 0
+epoch: 3; loss: 0.03; val_loss: 0.03; macro_f1: 0.89; best_macro_f1: 0.89, patience: 0
+epoch: 4; loss: 0.02; val_loss: 0.03; macro_f1: 0.88; best_macro_f1: 0.89, patience: 1
+epoch: 5; loss: 0.02; val_loss: 0.02; macro_f1: 0.91; best_macro_f1: 0.91, patience: 0
+epoch: 6; loss: 0.02; val_loss: 0.02; macro_f1: 0.90; best_macro_f1: 0.91, patience: 1
+epoch: 7; loss: 0.01; val_loss: 0.03; macro_f1: 0.90; best_macro_f1: 0.91, patience: 2
+epoch: 8; loss: 0.01; val_loss: 0.03; macro_f1: 0.91; best_macro_f1: 0.91, patience: 3
+Experiment: experiment_6
+epoch: 0; loss: 0.11; val_loss: 0.06; macro_f1: 0.72; best_macro_f1: 0.72, patience: 0
+epoch: 1; loss: 0.05; val_loss: 0.03; macro_f1: 0.82; best_macro_f1: 0.82, patience: 0
+epoch: 2; loss: 0.03; val_loss: 0.03; macro_f1: 0.86; best_macro_f1: 0.86, patience: 0
+epoch: 3; loss: 0.03; val_loss: 0.02; macro_f1: 0.90; best_macro_f1: 0.90, patience: 0
+epoch: 4; loss: 0.02; val_loss: 0.02; macro_f1: 0.90; best_macro_f1: 0.90, patience: 0
+epoch: 5; loss: 0.02; val_loss: 0.02; macro_f1: 0.90; best_macro_f1: 0.90, patience: 0
+epoch: 6; loss: 0.02; val_loss: 0.02; macro_f1: 0.90; best_macro_f1: 0.90, patience: 1
+epoch: 7; loss: 0.01; val_loss: 0.02; macro_f1: 0.91; best_macro_f1: 0.91, patience: 0
+epoch: 8; loss: 0.01; val_loss: 0.03; macro_f1: 0.90; best_macro_f1: 0.91, patience: 1
+epoch: 9; loss: 0.01; val_loss: 0.03; macro_f1: 0.91; best_macro_f1: 0.91, patience: 0
+Experiment: experiment_7
+epoch: 0; loss: 0.12; val_loss: 0.07; macro_f1: 0.65; best_macro_f1: 0.65, patience: 0
+epoch: 1; loss: 0.06; val_loss: 0.04; macro_f1: 0.81; best_macro_f1: 0.81, patience: 0
+epoch: 2; loss: 0.04; val_loss: 0.03; macro_f1: 0.85; best_macro_f1: 0.85, patience: 0
+epoch: 3; loss: 0.03; val_loss: 0.03; macro_f1: 0.88; best_macro_f1: 0.88, patience: 0
+epoch: 4; loss: 0.02; val_loss: 0.02; macro_f1: 0.88; best_macro_f1: 0.88, patience: 0
+epoch: 5; loss: 0.02; val_loss: 0.03; macro_f1: 0.90; best_macro_f1: 0.90, patience: 0
+epoch: 6; loss: 0.02; val_loss: 0.03; macro_f1: 0.90; best_macro_f1: 0.90, patience: 0
+epoch: 7; loss: 0.01; val_loss: 0.03; macro_f1: 0.90; best_macro_f1: 0.90, patience: 1
+epoch: 8; loss: 0.01; val_loss: 0.03; macro_f1: 0.91; best_macro_f1: 0.91, patience: 0
+epoch: 9; loss: 0.01; val_loss: 0.03; macro_f1: 0.91; best_macro_f1: 0.91, patience: 0
+Experiment: experiment_8
+epoch: 0; loss: 0.11; val_loss: 0.05; macro_f1: 0.78; best_macro_f1: 0.78, patience: 0
+epoch: 1; loss: 0.04; val_loss: 0.03; macro_f1: 0.85; best_macro_f1: 0.85, patience: 0
+epoch: 2; loss: 0.03; val_loss: 0.02; macro_f1: 0.88; best_macro_f1: 0.88, patience: 0
+epoch: 3; loss: 0.02; val_loss: 0.02; macro_f1: 0.90; best_macro_f1: 0.90, patience: 0
+epoch: 4; loss: 0.02; val_loss: 0.02; macro_f1: 0.90; best_macro_f1: 0.90, patience: 1
+epoch: 5; loss: 0.02; val_loss: 0.02; macro_f1: 0.90; best_macro_f1: 0.90, patience: 0
+epoch: 6; loss: 0.02; val_loss: 0.02; macro_f1: 0.88; best_macro_f1: 0.90, patience: 1
+epoch: 7; loss: 0.01; val_loss: 0.02; macro_f1: 0.90; best_macro_f1: 0.90, patience: 2
+epoch: 8; loss: 0.01; val_loss: 0.02; macro_f1: 0.91; best_macro_f1: 0.91, patience: 0
+epoch: 9; loss: 0.01; val_loss: 0.02; macro_f1: 0.91; best_macro_f1: 0.91, patience: 1
+Experiment: experiment_9
+epoch: 0; loss: 0.11; val_loss: 0.05; macro_f1: 0.73; best_macro_f1: 0.73, patience: 0
+epoch: 1; loss: 0.05; val_loss: 0.03; macro_f1: 0.85; best_macro_f1: 0.85, patience: 0
+epoch: 2; loss: 0.03; val_loss: 0.03; macro_f1: 0.86; best_macro_f1: 0.86, patience: 0
+epoch: 3; loss: 0.02; val_loss: 0.02; macro_f1: 0.89; best_macro_f1: 0.89, patience: 0
+epoch: 4; loss: 0.02; val_loss: 0.02; macro_f1: 0.90; best_macro_f1: 0.90, patience: 0
+epoch: 5; loss: 0.02; val_loss: 0.02; macro_f1: 0.90; best_macro_f1: 0.90, patience: 1
+epoch: 6; loss: 0.01; val_loss: 0.02; macro_f1: 0.90; best_macro_f1: 0.90, patience: 0
+epoch: 7; loss: 0.01; val_loss: 0.03; macro_f1: 0.90; best_macro_f1: 0.90, patience: 1
+epoch: 8; loss: 0.01; val_loss: 0.03; macro_f1: 0.91; best_macro_f1: 0.91, patience: 0
+epoch: 9; loss: 0.01; val_loss: 0.03; macro_f1: 0.91; best_macro_f1: 0.91, patience: 1
+Experiment: experiment_10
+epoch: 0; loss: 0.13; val_loss: 0.08; macro_f1: 0.58; best_macro_f1: 0.58, patience: 0
+epoch: 1; loss: 0.07; val_loss: 0.04; macro_f1: 0.78; best_macro_f1: 0.78, patience: 0
+epoch: 2; loss: 0.04; val_loss: 0.03; macro_f1: 0.83; best_macro_f1: 0.83, patience: 0
+epoch: 3; loss: 0.03; val_loss: 0.03; macro_f1: 0.86; best_macro_f1: 0.86, patience: 0
+epoch: 4; loss: 0.03; val_loss: 0.03; macro_f1: 0.89; best_macro_f1: 0.89, patience: 0
+epoch: 5; loss: 0.02; val_loss: 0.03; macro_f1: 0.87; best_macro_f1: 0.89, patience: 1
+epoch: 6; loss: 0.02; val_loss: 0.03; macro_f1: 0.90; best_macro_f1: 0.90, patience: 0
+epoch: 7; loss: 0.02; val_loss: 0.03; macro_f1: 0.89; best_macro_f1: 0.90, patience: 1
+epoch: 8; loss: 0.01; val_loss: 0.03; macro_f1: 0.89; best_macro_f1: 0.90, patience: 2
+epoch: 9; loss: 0.01; val_loss: 0.03; macro_f1: 0.89; best_macro_f1: 0.90, patience: 3

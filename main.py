@@ -9,6 +9,8 @@ import numpy as np
 import random
 from tqdm import tqdm
 
+from time import sleep
+
 # if torch.cuda.is_available():
   # torch.set_default_tensor_type('torch.cuda.FloatTensor')
 
@@ -48,7 +50,7 @@ def train(train_loader, dev_loader, model, label2id):
   optimizer = Adam(lr = lr, params=model.parameters())
 
   while epoch < max_epochs and not early_stop:
-    
+    sleep(30)
     model.train()
     running_loss = 0.0
     steps = 0
@@ -130,13 +132,17 @@ def train(train_loader, dev_loader, model, label2id):
         if patience >= max_patience:
           early_stop = True
 
-    print('epoch: {}; loss: {:.2f}; val_loss: {:.2f}; macro_f1: {:.2f}; best_macro_f1: {:.2f}, patience: {}'.format(epoch, 
-                                                                                              loss, 
-                                                                                              dev_loss, 
-                                                                                              macro_f1,
-                                                                                              best_macro_f1,
-                                                                                              patience))
-    
+    log = 'epoch: {}; loss: {:.2f}; val_loss: {:.2f}; macro_f1: {:.2f}; best_macro_f1: {:.2f}, patience: {}'.format(
+      epoch, 
+      loss, 
+      dev_loss, 
+      macro_f1,
+      best_macro_f1,
+      patience)
+    print(log)
+    with open("output.log", "a") as log_file:
+      log_file.write(log + "\n")
+
     if early_stop:
       print('early stopped')
 
@@ -144,24 +150,31 @@ def train(train_loader, dev_loader, model, label2id):
 
 
 
-model = get_model('BertClassifier')
 
-train_path = model.configuration('PathInputTrain')
-dev_path = model.configuration('PathInputDev')
-max_context_side_size = model.configuration('MaxContextSideSize')
+for experiment in ["experiment_" + str(i) for i in range(9, 10 + 1)]:
+  print("Starting " + experiment)
+  model = get_model(experiment)
 
-# train_dataset, label2id = prepare_entity_typing_dataset(train_path, load=True)
-# dev_dataset, _ = prepare_entity_typing_dataset(dev_path, label2id = label2id, load=True)
+  with open("output.log", "a") as log_file:
+    log_file.write("Experiment: {}\n".format(experiment))
 
-train_dataset, label2id = prepare_entity_typing_dataset(train_path, max_context_side_size = max_context_side_size)
-dev_dataset, _ = prepare_entity_typing_dataset(dev_path, label2id = label2id, max_context_side_size = max_context_side_size)
+  train_path = model.configuration('PathInputTrain')
+  dev_path = model.configuration('PathInputDev')
+  max_context_side_size = model.configuration('MaxContextSideSize')
 
-save_dataset(train_dataset, label2id, 'datasets/3_types_context1_train.pkl')
-save_dataset(dev_dataset, label2id, 'datasets/3_types_context1_dev.pkl')
+  # train_dataset, label2id = prepare_entity_typing_dataset(train_path, load=True)
+  # dev_dataset, _ = prepare_entity_typing_dataset(dev_path, label2id = label2id, load=True)
 
-batch_size = model.configuration('BatchSize')
+  train_dataset, label2id = prepare_entity_typing_dataset(train_path, max_context_side_size = max_context_side_size)
+  dev_dataset, _ = prepare_entity_typing_dataset(dev_path, label2id = label2id, max_context_side_size = max_context_side_size)
 
-train_loader = DataLoader(train_dataset, batch_size = batch_size, shuffle = False)
-dev_loader = DataLoader(dev_dataset, batch_size = batch_size)
+  save_dataset(train_dataset, label2id, 'datasets/3_types_context1_train.pkl')
+  save_dataset(dev_dataset, label2id, 'datasets/3_types_context1_dev.pkl')
 
-train(train_loader, dev_loader, model, label2id)
+  batch_size = model.configuration('BatchSize')
+
+  train_loader = DataLoader(train_dataset, batch_size = batch_size, shuffle = False)
+  dev_loader = DataLoader(dev_dataset, batch_size = batch_size)
+
+  train(train_loader, dev_loader, model, label2id)
+  sleep(60 * 2)
