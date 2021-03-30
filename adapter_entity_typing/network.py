@@ -50,6 +50,7 @@ def read_parameters(experiment: str = "DEFAULT",
         "BatchSize":           int,     # batch size for both training and inference
         "LearningRate":        float,   # learning rate
         "MaxContextSideSize":  int,     # max number of words in right and left context
+        "MaxEntitySize":       int,     # max number of words in the entity mention (the last words will be cutted)
         }
     #
     def get_parameter(p: str):
