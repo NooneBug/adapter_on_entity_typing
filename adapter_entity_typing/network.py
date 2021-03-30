@@ -80,7 +80,8 @@ def get_model(experiment_name: str,
     
         model.add_adapter(experiment_name, AdapterType.text_task, adapter_config)
         model.train_adapter(experiment_name)
-
+    else:
+        model.freeze_model()
     return model
 
 def add_classifier(model, labels: dict = {}):

@@ -19,24 +19,16 @@ if torch.cuda.is_available():
   print('gpu on')
   # torch.set_default_tensor_type('torch.cuda.FloatTensor')
 
-
-torch.manual_seed(236451)
-torch.cuda.manual_seed(236451)
-np.random.seed(236451)
-random.seed(236451)
-torch.backends.cudnn.enabled=False
-torch.backends.cudnn.deterministic=True
-
 def declare_callbacks_and_trainer(early_stopping_patience, epochs, experiment_name):
     callbacks = []
 
     early_stop_callback = EarlyStopping(
-    monitor='example_macro/macro_f1',
-    min_delta=0.00,
-    patience=early_stopping_patience,
-    verbose=False,
-    mode='max'
-    )
+                                        monitor='example_macro/macro_f1',
+                                        min_delta=0.00,
+                                        patience=early_stopping_patience,
+                                        verbose=False,
+                                        mode='max'
+                                        )
     callbacks.append(early_stop_callback)
 
     checkpoint_callback = ModelCheckpoint(monitor='example_macro/macro_f1',
@@ -56,11 +48,16 @@ def declare_callbacks_and_trainer(early_stopping_patience, epochs, experiment_na
 
 
 for experiment in ["experiment_" + str(i) for i in range(1, 10 + 1)]:
+
+  torch.manual_seed(236451)
+  torch.cuda.manual_seed(236451)
+  np.random.seed(236451)
+  random.seed(236451)
+  torch.backends.cudnn.enabled=False
+  torch.backends.cudnn.deterministic=True
+  
   print("Starting " + experiment)
   model = get_model(experiment)
-
-  with open("output.log", "a") as log_file:
-    log_file.write("Experiment: {}\n".format(experiment))
 
   train_path = model.configuration('PathInputTrain')
   dev_path = model.configuration('PathInputDev')
@@ -70,6 +67,7 @@ for experiment in ["experiment_" + str(i) for i in range(1, 10 + 1)]:
   epochs = model.configuration('MaxEpoch')
   exp_name = model.configuration('ExperimentName')
   lr = model.configuration('LearningRate')
+  batch_size = model.configuration('BatchSize')
 
   # train_dataset, label2id = prepare_entity_typing_dataset(train_path, load=True)
   # dev_dataset, _ = prepare_entity_typing_dataset(dev_path, label2id = label2id, load=True)
@@ -78,20 +76,17 @@ for experiment in ["experiment_" + str(i) for i in range(1, 10 + 1)]:
   dev_dataset, _ = prepare_entity_typing_dataset(dev_path, label2id = label2id, max_context_side_size = max_context_side_size, max_entity_size=max_entity_size)
 
   # save_dataset(train_dataset, label2id, 'datasets/3_types_context1_train.pkl')
-  # save_dataset(dev_dataset, label2id, 'datasets/3_types_context1_dev.pkl')
+  # save_dataset(dev_dataset, label2id, 'datasets/3_types_context1_dev.pkl')  
 
-  batch_size = model.configuration('BatchSize')
-
-  train_loader = DataLoader(train_dataset, batch_size = batch_size, shuffle = False)
-  dev_loader = DataLoader(dev_dataset, batch_size = batch_size)
+  train_loader = DataLoader(train_dataset, batch_size = batch_size, shuffle = True, num_workers=20)
+  dev_loader = DataLoader(dev_dataset, batch_size = batch_size, num_workers=20)
 
   id2label = {v: k for k,v in label2id.items()}
 
-  model.freeze_model()
+
   add_classifier(model = model, labels = label2id)
 
   pl_wrapper = adapterPLWrapper(model, id2label, lr)
-
 
   trainer = declare_callbacks_and_trainer(early_stopping_patience=early_stopping_patience,
                                           epochs = epochs,

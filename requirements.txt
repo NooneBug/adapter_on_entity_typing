@@ -1,7 +1,6 @@
-packages:
-  - packaging == 20.9
-  - datasets == 1.5
-  - torch  == 1.6.0
-  - pip:
-    - adapter-transformers
-    - git+https://github.com/NooneBug/typing-model
+packaging == 20.9
+datasets == 1.5
+torch  == 1.6.0
+adapter-transformers
+git+https://github.com/NooneBug/typing-model
+pytorch-lightning

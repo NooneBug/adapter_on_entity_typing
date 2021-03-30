@@ -109,11 +109,9 @@ class adapterPLWrapper(pl.LightningModule):
 
   def update_metrics(self, pred, labels):
 
-    pred = self.sig(pred)
-
     pred = self.get_discrete_pred(pred)
     labels = labels.int()
-    
+
     self.micro_f1.update(preds=pred, target=labels)
     self.micro_precision.update(preds=pred, target=labels)
     self.micro_recall.update(preds=pred, target=labels)
