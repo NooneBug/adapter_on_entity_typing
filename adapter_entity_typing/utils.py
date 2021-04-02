@@ -31,7 +31,11 @@ def prepare_entity_typing_dataset(path, label2id = None, load=False, max_context
 
 def get_labels(lines, label2id = None):
   example_labels = [l['y_str'] for l in lines]
-  labels = set([l for e in example_labels for l in e])
+  all_labels = [l for e in example_labels for l in e]
+  labels = []
+  for l in all_labels:
+    if l not in labels:
+      labels.append(l)
 
   if not label2id:
     label2id = {k:i for i, k in enumerate(labels)}
@@ -54,7 +58,8 @@ def get_sentences(lines, max_context_side_size = -1, max_entity_size = -1):
         mention_head = ' '.join(l['mention_span'].split(' ')[:max_entity_size]) 
       else:
         mention_head = l['mention_span']
-      sent = '[CLS]' + ' '.join(left_context) + ' [SEP] ' + mention_head + ' [SEP] ' + ' '.join(right_context)
+      # sent = '[CLS] ' + ' '.join(left_context) + ' [SEP] ' + mention_head + ' [SEP] ' + ' '.join(right_context)
+      sent = '[CLS] ' + mention_head + ' [SEP] ' +' '.join(left_context) + ' [SEP] ' +  ' '.join(right_context)
       sents.append(sent.strip())
     return sents
 

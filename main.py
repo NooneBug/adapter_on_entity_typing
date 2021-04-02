@@ -145,7 +145,7 @@ def train(train_loader, dev_loader, model, label2id):
 
 
 
-for experiment in ["experiment_" + str(i) for i in range(1, 10 + 1)]:
+for experiment in ["experiment_" + str(i) for i in range(0, 15 + 1)]:
   print("Starting " + experiment)
   model = get_model(experiment)
 

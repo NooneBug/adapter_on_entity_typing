@@ -32,6 +32,7 @@ def declare_callbacks_and_trainer(early_stopping_patience, epochs, experiment_na
     callbacks.append(early_stop_callback)
 
     checkpoint_callback = ModelCheckpoint(monitor='example_macro/macro_f1',
+                                          # dirpath='/datahdd/vmanuel/checkpoints/',
                                           dirpath='trained_models/',
                                           filename='model',
                                           mode='max',
@@ -46,8 +47,10 @@ def declare_callbacks_and_trainer(early_stopping_patience, epochs, experiment_na
 
     return trainer
 
-
-for experiment in ["experiment_" + str(i) for i in range(1, 10 + 1)]:
+exps = [i for i in range(0, 15 + 1)]
+# exps = [15]
+for experiment in ["experiment_" + str(i) for i in exps]:
+# for experiment in ["OnlyMention"]:
 
   torch.manual_seed(236451)
   torch.cuda.manual_seed(236451)
@@ -82,7 +85,6 @@ for experiment in ["experiment_" + str(i) for i in range(1, 10 + 1)]:
   dev_loader = DataLoader(dev_dataset, batch_size = batch_size, num_workers=20)
 
   id2label = {v: k for k,v in label2id.items()}
-
 
   add_classifier(model = model, labels = label2id)
 

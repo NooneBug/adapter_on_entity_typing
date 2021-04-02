@@ -22,15 +22,16 @@ class BertDataset(Dataset):
                 max_length = len(splitted)
         return max_length
 
+
     def tokenize(self):
         print('... Tokenization started ...')
         print('... Maximum length : {} ...'.format(self.max_length))
         t = time.time()
         self.tokenized_sent, self.attn_masks = [], []
-        for s in self.sent:
-            tok = self.tokenizer(s, max_length = self.max_length, truncation = True, padding="max_length")
-            self.tokenized_sent.append(tok['input_ids'])
-            self.attn_masks.append(tok['attention_mask'])
+        tok = self.tokenizer(self.sent, max_length = self.max_length, padding = 'max_length', truncation = True)
+        for i in range(len(self.sent)):
+            self.tokenized_sent.append(tok['input_ids'][i])
+            self.attn_masks.append(tok['attention_mask'][i])
         # self.tokenized_sent = [self.tokenizer(s, max_length=80, truncation=True, padding="max_length")['input_ids'] for s in self.sent]
         print('... Tokenized in {:.2f} seconds ...'.format(time.time() - t))
         

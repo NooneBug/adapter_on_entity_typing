@@ -52,6 +52,7 @@ def read_parameters(experiment: str = "DEFAULT",
         "MaxContextSideSize":  int,     # max number of words in right and left context
         "MaxEntitySize":       int,     # max number of words in the entity mention (the last words will be cutted)
         "ExperimentName":      str,     # experiment name for tensorboard
+        "BertFineTuning":      int,     # how many Bert's transformer finetune (starting from the last)
         }
     #
     def get_parameter(p: str):
@@ -80,6 +81,13 @@ def get_model(experiment_name: str,
     
         model.add_adapter(experiment_name, AdapterType.text_task, adapter_config)
         model.train_adapter(experiment_name)
+    elif model.configuration('BertFineTuning'):
+        # generate a partial string which will match with each parameter in the i-esim transformer
+        layer_to_freeze = ['layer.{}.'.format(i) for i in range(0, 12 - model.configuration('BertFineTuning'))]
+        layer_to_freeze.append('embeddings')
+        for name, param in model.bert.named_parameters():
+          if any(n in name for n in layer_to_freeze):
+            param.requires_grad = False
     else:
         model.freeze_model()
     return model

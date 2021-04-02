@@ -106,4 +106,4 @@ epoch: 5; loss: 0.02; val_loss: 0.03; macro_f1: 0.87; best_macro_f1: 0.89, patie
 epoch: 6; loss: 0.02; val_loss: 0.03; macro_f1: 0.90; best_macro_f1: 0.90, patience: 0
 epoch: 7; loss: 0.02; val_loss: 0.03; macro_f1: 0.89; best_macro_f1: 0.90, patience: 1
 epoch: 8; loss: 0.01; val_loss: 0.03; macro_f1: 0.89; best_macro_f1: 0.90, patience: 2
-epoch: 9; loss: 0.01; val_loss: 0.03; macro_f1: 0.89; best_macro_f1: 0.90, patience: 3
+epoch: 9; loss: 0.01; val_loss: 0.03; macro_f1: 0.89; best_macro_f1: 0.90, patience: 3Experiment: experiment_1
