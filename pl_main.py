@@ -89,7 +89,9 @@ for experiment in exps:
   # dev_dataset, _ = prepare_entity_typing_dataset(dev_path, label2id = label2id, load=True)
 
   train_dataset, label2id = prepare_entity_typing_dataset(train_path, max_context_side_size = max_context_side_size, max_entity_size=max_entity_size)
-  dev_dataset, _ = prepare_entity_typing_dataset(dev_path, label2id = label2id, max_context_side_size = max_context_side_size, max_entity_size=max_entity_size)
+  dev_dataset, label2id = prepare_entity_typing_dataset(dev_path, label2id = label2id, max_context_side_size = max_context_side_size, max_entity_size=max_entity_size)
+
+  train_dataset.label_number = len(label2id)
 
   # save_dataset(train_dataset, label2id, 'datasets/3_types_context1_train.pkl')
   # save_dataset(dev_dataset, label2id, 'datasets/3_types_context1_dev.pkl')  

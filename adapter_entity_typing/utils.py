@@ -40,7 +40,19 @@ def get_labels(lines, label2id = None):
   if not label2id:
     label2id = {k:i for i, k in enumerate(labels)}
 
-  return [[label2id[l] for l in e] for e in example_labels], label2id
+  example_id_labels = []
+
+  for e in example_labels:
+    id_labels = []
+    for l in e:
+      try:
+        id_labels.append(label2id[l])
+      except:
+        label2id[l] = len(label2id)
+        id_labels.append(label2id[l])
+    example_id_labels.append(id_labels)
+
+  return example_id_labels, label2id
 
 def get_sentences(lines, max_context_side_size = -1, max_entity_size = -1):
   if max_context_side_size == -1:  
