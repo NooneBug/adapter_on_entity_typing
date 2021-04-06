@@ -49,8 +49,20 @@ def declare_callbacks_and_trainer(early_stopping_patience, epochs, experiment_na
 
 exps = [i for i in range(0, 15 + 1)]
 # exps = [15]
-for experiment in ["experiment_" + str(i) for i in exps]:
+# for experiment in ["experiment_" + str(i) for i in exps]:
 # for experiment in ["OnlyMention"]:
+exps = [# "bert_ft_0_", "bert_ft_1_", "bert_ft_2_", "adapter_1_",
+        "adapter_2_", "adapter_4_", "adapter_8_"
+	# , "adapter_16_"
+]
+exps_datasets = [# "figer",
+                 # "bbn",
+                 # "onto",
+                 "crowd"]
+
+exps = [e + d for e in exps for d in exps_datasets]
+
+for experiment in exps:
 
   torch.manual_seed(236451)
   torch.cuda.manual_seed(236451)
@@ -58,6 +70,7 @@ for experiment in ["experiment_" + str(i) for i in exps]:
   random.seed(236451)
   torch.backends.cudnn.enabled=False
   torch.backends.cudnn.deterministic=True
+  torch.cuda.empty_cache()
   
   print("Starting " + experiment)
   model = get_model(experiment)
