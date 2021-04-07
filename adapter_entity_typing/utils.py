@@ -3,13 +3,15 @@ import json
 import pickle
 import torch
 from tqdm import tqdm
-import time 
+import time
+import os
+
 
 def save_dataset(dataset, label2id, path):
   with open(path, 'wb') as out:
     pickle.dump((dataset, label2id), out)
 
-def prepare_entity_typing_dataset(path, label2id = None, load=False, max_context_side_size=-1,  max_entity_size = -1):
+def prepare_entity_typing_dataset(path, label2id = None, load=False, max_context_side_size=-1,  max_entity_size = -1, tokenized_dir="./datasets_tokenized/", dataset_name=""):
   '''
   path: the dataset path (.json) or the dataset object path (.pkl)
   label2id: if load == False and path is a (.json) is used to not generate a new dictionary 
@@ -30,24 +32,50 @@ def prepare_entity_typing_dataset(path, label2id = None, load=False, max_context
     sentences = get_sentences(lines, max_context_side_size, max_entity_size)
     labels, label2id = get_labels(lines, label2id=label2id)
 
+    if tokenized_dir and not os.path.isdir(tokenized_dir):
+      os.mkdir(tokenized_dir)
+    dataset_file = os.path.join(tokenized_dir, dataset_name)
+
+    if dataset_name:
+      tokenized_sent = []
+      attn_masks = []
+      if os.path.isfile(dataset_file):
+        print("reading from cache...")
+        with open(dataset_file, "r") as dataset_file_tokenized:
+          for line in dataset_file_tokenized.readlines():
+            line_json = json.loads(line)
+            tokenized_sent.append(line_json["tokenized_sent"])
+            attn_masks.append(line_json["attn_masks"])
+        bd = BertDataset(sentences, labels, label_number = len(label2id),
+                         tokenized_sent=tokenized_sent, attn_masks=attn_masks)
+        return bd, label2id
+
     bd = BertDataset(sentences, labels, label_number = len(label2id))
-  return bd, label2id
+    if dataset_name:
+      with open(dataset_file, "a") as dataset_file_tokenized:
+        for tokenized_sent_i, attn_mask_i in zip(bd.tokenized_sent, bd.attn_masks):
+          out_i = {"tokenized_sent": tokenized_sent_i,
+                   "attn_masks":     attn_mask_i}
+          dataset_file_tokenized.write(json.dumps(out_i) + "\n")
+    return bd, label2id
+          
+    
 
 def get_labels(lines, label2id = None):
   example_labels = [l['y_str'] for l in lines]
   all_labels = [l for e in example_labels for l in e]
   labels = []
   print('... generating label set ...')
-
+  #
   for l in tqdm(all_labels):
     if l not in labels:
       labels.append(l)
-
+  #
   if not label2id:
     label2id = {k:i for i, k in enumerate(labels)}
-
+  #
   example_id_labels = []
-
+  #
   print('... traducing labels in each example ...')
   for e in tqdm(example_labels):
     id_labels = []
@@ -58,7 +86,7 @@ def get_labels(lines, label2id = None):
         label2id[l] = len(label2id)
         id_labels.append(label2id[l])
     example_id_labels.append(id_labels)
-
+  #
   return example_id_labels, label2id
 
 def get_sentences(lines, max_context_side_size = -1, max_entity_size = -1):

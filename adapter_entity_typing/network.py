@@ -42,6 +42,8 @@ def read_parameters(experiment: str = "DEFAULT",
         "PathInputDev":        str,     # path of the input dev dataset
         "PathOutput":          str,     # path of the output
         "PathModel":           str,     # path for storing the adapeters weights
+        "DatasetName":         str,     # the name of the dataset; empty to avoid storing
+        "DatasetTokenizedDir": str,     # the directory where the tokenized dataset is (will be) stored
         "AdapterConfig":       str,     # configuration of the adapter (Pfeiffer or Houlsby)
         "ReductionFactor":     int,     # reduction factor of the adapter layer (768 / ReductionFactor = nodes)
         "ClassificatorLayers": int,     # number of layers in the classifier
@@ -57,7 +59,7 @@ def read_parameters(experiment: str = "DEFAULT",
     #
     def get_parameter(p: str):
         nonlocal config, parameter_type
-        return parameter_type.get(p, lambda x: x)(config[experiment][p])
+        return parameter_type.get(p, eval)(config[experiment][p])
     #
     return get_parameter
 

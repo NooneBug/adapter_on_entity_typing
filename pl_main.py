@@ -54,10 +54,10 @@ exps = [i for i in range(0, 15 + 1)]
 exps = ["bert_ft_0_", "bert_ft_1_", "bert_ft_2_", "adapter_1_",
         "adapter_2_", "adapter_4_", "adapter_8_", "adapter_16_"]
 exps_datasets = [
-                "choi"
-                # "figer",
-                # "bbn",
-                # "onto"
+                "choi",
+                "figer",
+                "bbn",
+                "onto"
                 ]
 
 exps = [e + d for e in exps for d in exps_datasets]
@@ -88,8 +88,17 @@ for experiment in exps:
   # train_dataset, label2id = prepare_entity_typing_dataset(train_path, load=True)
   # dev_dataset, _ = prepare_entity_typing_dataset(dev_path, label2id = label2id, load=True)
 
-  train_dataset, label2id = prepare_entity_typing_dataset(train_path, max_context_side_size = max_context_side_size, max_entity_size=max_entity_size)
-  dev_dataset, label2id = prepare_entity_typing_dataset(dev_path, label2id = label2id, max_context_side_size = max_context_side_size, max_entity_size=max_entity_size)
+  train_dataset, label2id = prepare_entity_typing_dataset(train_path,
+                                                          max_context_side_size = max_context_side_size,
+                                                          max_entity_size = max_entity_size,
+                                                          tokenized_dir = model.configuration("DatasetTokenizedDir"),
+                                                          dataset_name = model.configuration("DatasetName") + ".train")
+  dev_dataset, label2id = prepare_entity_typing_dataset(dev_path,
+                                                        label2id = label2id,
+                                                        max_context_side_size = max_context_side_size,
+                                                        max_entity_size = max_entity_size,
+                                                        tokenized_dir = model.configuration("DatasetTokenizedDir"),
+                                                        dataset_name = model.configuration("DatasetName") + ".dev")
 
   train_dataset.label_number = len(label2id)
 
