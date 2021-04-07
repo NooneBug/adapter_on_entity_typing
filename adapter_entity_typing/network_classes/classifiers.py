@@ -160,7 +160,10 @@ class MyMetrics(Metric):
 
         avg_pred_number, void_predictions, p, r, f1, ma_p, ma_r, ma_f1 = self.compute_metrics(pred_classes=self.pred_classes,	
                                                                                                 true_classes=self.true_classes)
-        predicted_class_number = len(set([c for sub in self.pred_classes for c in sub ]))        
+        # predicted_class_number = len(set([c for sub in self.pred_classes for c in sub ]))
+        predicted_class = [set(sub) for sub in self.pred_classes]
+        predicted_class_number = len(set.union(*predicted_class))
+        
         self.pred_classes = []
         self.true_classes = []
 

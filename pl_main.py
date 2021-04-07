@@ -34,7 +34,7 @@ def declare_callbacks_and_trainer(early_stopping_patience, epochs, experiment_na
     checkpoint_callback = ModelCheckpoint(monitor='example_macro/macro_f1',
                                           # dirpath='/datahdd/vmanuel/checkpoints/',
                                           dirpath='trained_models/',
-                                          filename='model',
+                                          filename=experiment_name,
                                           mode='max',
                                           save_last=False)
     callbacks.append(checkpoint_callback)
@@ -43,7 +43,7 @@ def declare_callbacks_and_trainer(early_stopping_patience, epochs, experiment_na
     logger = TensorBoardLogger('lightning_logs', name=experiment_name, default_hp_metric=False)
 
     trainer = Trainer(callbacks=callbacks, logger = logger, gpus = 1, 
-                      max_epochs=epochs)
+                      max_epochs=epochs, limit_train_batches=20)
 
     return trainer
 
@@ -53,10 +53,12 @@ exps = [i for i in range(0, 15 + 1)]
 # for experiment in ["OnlyMention"]:
 exps = ["bert_ft_0_", "bert_ft_1_", "bert_ft_2_", "adapter_1_",
         "adapter_2_", "adapter_4_", "adapter_8_", "adapter_16_"]
-exps_datasets = ["figer",
-                 "bbn",
-                 "onto",
-                 "crowd"]
+exps_datasets = [
+                "choi"
+                # "figer",
+                # "bbn",
+                # "onto"
+                ]
 
 exps = [e + d for e in exps for d in exps_datasets]
 

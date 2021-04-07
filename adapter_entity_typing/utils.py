@@ -2,6 +2,8 @@ from adapter_entity_typing.datasets_classes.bertDatasets import BertDataset
 import json
 import pickle
 import torch
+from tqdm import tqdm
+import time 
 
 def save_dataset(dataset, label2id, path):
   with open(path, 'wb') as out:
@@ -15,13 +17,15 @@ def prepare_entity_typing_dataset(path, label2id = None, load=False, max_context
   load: if load == False a new dataset is created from path;
         if load == True a dataset is loaded from path (togheter with its label2id)
   '''
-
+  t = time.time()
   if load:
     with open(path, 'rb') as inp:
       bd, label2id = pickle.load(inp)
   else:
     with open(path, 'r') as inp:
       lines = [json.loads(l) for l in inp.readlines()]
+
+    print('... lines red in {:.2f} seconds'.format(time.time() - t))
 
     sentences = get_sentences(lines, max_context_side_size, max_entity_size)
     labels, label2id = get_labels(lines, label2id=label2id)
@@ -33,7 +37,9 @@ def get_labels(lines, label2id = None):
   example_labels = [l['y_str'] for l in lines]
   all_labels = [l for e in example_labels for l in e]
   labels = []
-  for l in all_labels:
+  print('... generating label set ...')
+
+  for l in tqdm(all_labels):
     if l not in labels:
       labels.append(l)
 
@@ -42,7 +48,8 @@ def get_labels(lines, label2id = None):
 
   example_id_labels = []
 
-  for e in example_labels:
+  print('... traducing labels in each example ...')
+  for e in tqdm(example_labels):
     id_labels = []
     for l in e:
       try:
@@ -58,8 +65,9 @@ def get_sentences(lines, max_context_side_size = -1, max_entity_size = -1):
   if max_context_side_size == -1:  
     return [' '.join(l['left_context_token']) + ' [SEP] ' + l['mention_span'] + ' [SEP] ' + ' '.join(l['right_context_token']) for l in lines]
   else:
+    print('... formatting sentences ...')
     sents = []
-    for l in lines:
+    for l in tqdm(lines):
       if max_context_side_size == 0:
         left_context = ['']
         right_context = ['']

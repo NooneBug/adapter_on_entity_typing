@@ -6,3 +6,4 @@ datasets/
 *.pyc
 lightning_logs/
 trained_models/
+entity_context_optimizations_lightning_logs/
