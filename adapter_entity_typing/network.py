@@ -63,7 +63,6 @@ def read_parameters(experiment: str = "DEFAULT",
     #
     return get_parameter
 
-
 def get_model(experiment_name: str,
               config_file:str = PARAMETERS,
               pretrained:str = "bert-base-uncased"):

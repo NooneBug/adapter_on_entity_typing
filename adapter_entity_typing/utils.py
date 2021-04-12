@@ -11,9 +11,10 @@ def save_dataset(dataset, label2id, path):
   with open(path, 'wb') as out:
     pickle.dump((dataset, label2id), out)
 
-def prepare_entity_typing_dataset(path, label2id = None, load=False, max_context_side_size=-1,  max_entity_size = -1, tokenized_dir="./datasets_tokenized/", dataset_name=""):
+def prepare_entity_typing_dataset(path, label2id = None, load=False, max_context_side_size=-1,  max_entity_size = -1, 
+                                  tokenized_dir="./datasets_tokenized/", dataset_name=""):
   '''
-  path: the dataset path (.json) or the dataset object path (.pkl)
+  path: the dataset path (.json)
   label2id: if load == False and path is a (.json) is used to not generate a new dictionary 
     (used when dev set is created and has to be aligned with train set)
   load: if load == False a new dataset is created from path;
@@ -27,7 +28,7 @@ def prepare_entity_typing_dataset(path, label2id = None, load=False, max_context
     with open(path, 'r') as inp:
       lines = [json.loads(l) for l in inp.readlines()]
 
-    print('... lines red in {:.2f} seconds'.format(time.time() - t))
+    print('... lines red in {:.2f} seconds ...'.format(time.time() - t))
 
     sentences = get_sentences(lines, max_context_side_size, max_entity_size)
     labels, label2id = get_labels(lines, label2id=label2id)
@@ -40,9 +41,9 @@ def prepare_entity_typing_dataset(path, label2id = None, load=False, max_context
       tokenized_sent = []
       attn_masks = []
       if os.path.isfile(dataset_file):
-        print("reading from cache...")
+        print("... reading from cache ...")
         with open(dataset_file, "r") as dataset_file_tokenized:
-          for line in dataset_file_tokenized.readlines():
+          for line in tqdm(dataset_file_tokenized.readlines()):
             line_json = json.loads(line)
             tokenized_sent.append(line_json["tokenized_sent"])
             attn_masks.append(line_json["attn_masks"])
@@ -50,7 +51,8 @@ def prepare_entity_typing_dataset(path, label2id = None, load=False, max_context
                          tokenized_sent=tokenized_sent, attn_masks=attn_masks)
         return bd, label2id
 
-    bd = BertDataset(sentences, labels, label_number = len(label2id))
+    bd = BertDataset(sentences, labels, label_number = len(label2id), 
+                      tokenized_sent = [], attn_masks=[])
     if dataset_name:
       with open(dataset_file, "a") as dataset_file_tokenized:
         for tokenized_sent_i, attn_mask_i in zip(bd.tokenized_sent, bd.attn_masks):
@@ -107,7 +109,7 @@ def get_sentences(lines, max_context_side_size = -1, max_entity_size = -1):
       else:
         mention_head = l['mention_span']
       # sent = '[CLS] ' + ' '.join(left_context) + ' [SEP] ' + mention_head + ' [SEP] ' + ' '.join(right_context)
-      sent = '[CLS] ' + mention_head + ' [SEP] ' +' '.join(left_context) + ' [SEP] ' +  ' '.join(right_context)
+      sent = mention_head + ' [SEP] ' +' '.join(left_context) + ' [SEP] ' +  ' '.join(right_context)
       sents.append(sent.strip())
     return sents
 

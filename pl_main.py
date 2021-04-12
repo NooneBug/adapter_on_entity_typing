@@ -19,15 +19,29 @@ if torch.cuda.is_available():
   print('gpu on')
   # torch.set_default_tensor_type('torch.cuda.FloatTensor')
 
+class EarlyStoppingWithColdStart(EarlyStopping):
+    def __init__(self, monitor: str, min_delta: float, patience: int, verbose: bool, mode: str, strict: bool, cold_start_epochs: int = 0):
+        super().__init__(monitor=monitor, min_delta=min_delta, patience=patience, verbose=verbose, mode=mode, strict=strict)
+        self.cold_start_epoch_number = cold_start_epochs
+    
+    def on_validation_end(self, trainer, pl_module):
+        if trainer.running_sanity_check:
+            return
+        elif pl_module.current_epoch < self.cold_start_epoch_number:
+            return
+        else:
+            self._run_early_stopping_check(trainer, pl_module)
 def declare_callbacks_and_trainer(early_stopping_patience, epochs, experiment_name):
     callbacks = []
 
-    early_stop_callback = EarlyStopping(
+    early_stop_callback = EarlyStoppingWithColdStart(
                                         monitor='example_macro/macro_f1',
                                         min_delta=0.00,
                                         patience=early_stopping_patience,
                                         verbose=False,
-                                        mode='max'
+                                        mode='max',
+                                        strict=True,
+                                        cold_start_epochs=70
                                         )
     callbacks.append(early_stop_callback)
 
@@ -43,27 +57,23 @@ def declare_callbacks_and_trainer(early_stopping_patience, epochs, experiment_na
     logger = TensorBoardLogger('lightning_logs', name=experiment_name, default_hp_metric=False)
 
     trainer = Trainer(callbacks=callbacks, logger = logger, gpus = 1, 
-                      max_epochs=epochs, limit_train_batches=20)
+                      max_epochs=epochs, limit_train_batches=300, limit_val_batches=.25,
+                      precision = 16)
 
     return trainer
 
-exps = [i for i in range(0, 15 + 1)]
-# exps = [15]
-# for experiment in ["experiment_" + str(i) for i in exps]:
-# for experiment in ["OnlyMention"]:
 exps = ["bert_ft_0_", "bert_ft_1_", "bert_ft_2_", "adapter_1_",
         "adapter_2_", "adapter_4_", "adapter_8_", "adapter_16_"]
 exps_datasets = [
                 "choi",
-                "figer",
-                "bbn",
-                "onto"
+                # "figer",
+                # "bbn",
+                # "onto"
                 ]
 
-exps = [e + d for e in exps for d in exps_datasets]
+exps = [e + d for d in exps_datasets for e in exps]
 
 for experiment in exps:
-
   torch.manual_seed(236451)
   torch.cuda.manual_seed(236451)
   np.random.seed(236451)
@@ -105,8 +115,8 @@ for experiment in exps:
   # save_dataset(train_dataset, label2id, 'datasets/3_types_context1_train.pkl')
   # save_dataset(dev_dataset, label2id, 'datasets/3_types_context1_dev.pkl')  
 
-  train_loader = DataLoader(train_dataset, batch_size = batch_size, shuffle = True, num_workers=20)
-  dev_loader = DataLoader(dev_dataset, batch_size = batch_size, num_workers=20)
+  train_loader = DataLoader(train_dataset, batch_size = batch_size, shuffle = True, num_workers=20, pin_memory = True)
+  dev_loader = DataLoader(dev_dataset, batch_size = batch_size, num_workers=20, shuffle = True, pin_memory = True)
 
   id2label = {v: k for k,v in label2id.items()}
 

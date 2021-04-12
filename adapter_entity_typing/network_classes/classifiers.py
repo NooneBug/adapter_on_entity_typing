@@ -4,7 +4,7 @@ from transformers.modeling_bert import BertModelWithHeads
 import pytorch_lightning as pl
 from pytorch_lightning.metrics import Metric
 import numpy as np
-from torch.nn.modules.loss import BCELoss
+from torch.nn.modules.loss import BCELoss, BCEWithLogitsLoss
 
 
 
@@ -27,32 +27,39 @@ class adapterPLWrapper(pl.LightningModule):
       self.id2label = id2label
 
       self.lr = lr
-      self.criterion = BCELoss()
+      self.criterion = BCEWithLogitsLoss(pos_weight=torch.full((len(id2label),), 1.))
 
       self.sig = Sigmoid()
 
-      self.micro_precision = pl.metrics.classification.precision_recall.Precision(num_classes=len(self.id2label),
+      self.declare_metrics(self.id2label)
+
+  def declare_metrics(self, id2label):
+    self.micro_precision = pl.metrics.classification.precision_recall.Precision(num_classes=len(self.id2label),
                                                                                     average='micro',
                                                                                     multilabel=True)
-      self.micro_recall = pl.metrics.classification.precision_recall.Recall(num_classes=len(self.id2label),
-                                                                              average='micro',
-                                                                              multilabel=True)
-      self.micro_f1 = pl.metrics.classification.F1(num_classes=len(self.id2label),
-                                                      average='micro',
-                                                      multilabel=True)
-      self.macro_precision = pl.metrics.classification.precision_recall.Precision(num_classes=len(self.id2label),
-                                                                                  average='macro',
-                                                                                  multilabel=True)
-
-      self.macro_recall = pl.metrics.classification.precision_recall.Recall(num_classes=len(self.id2label),
-                                                                                  average='macro',
-                                                                                  multilabel=True)
-
-      self.macro_f1 = pl.metrics.classification.F1(num_classes=len(self.id2label),
-                                                      average='macro',
-                                                      multilabel=True)
-
-      self.my_metrics = MyMetrics(id2label=id2label)
+    # self.micro_precision = self.micro_precision.to('cpu')
+    self.micro_recall = pl.metrics.classification.precision_recall.Recall(num_classes=len(self.id2label),
+                                                                            average='micro',
+                                                                            multilabel=True)
+    # self.micro_recall = self.micro_recall.to('cpu')
+    self.micro_f1 = pl.metrics.classification.F1(num_classes=len(self.id2label),
+                                                    average='micro',
+                                                    multilabel=True)
+    # self.micro_f1 = self.micro_f1.to('cpu')
+    self.macro_precision = pl.metrics.classification.precision_recall.Precision(num_classes=len(self.id2label),
+                                                                                average='macro',
+                                                                                multilabel=True)
+    # self.macro_precision = self.macro_precision.to('cpu')
+    self.macro_recall = pl.metrics.classification.precision_recall.Recall(num_classes=len(self.id2label),
+                                                                                average='macro',
+                                                                                multilabel=True)
+    # self.macro_recall = self.macro_recall.to('cpu')
+    self.macro_f1 = pl.metrics.classification.F1(num_classes=len(self.id2label),
+                                                    average='macro',
+                                                    multilabel=True)
+    # self.macro_f1 = self.macro_f1.to('cpu')
+    self.my_metrics = MyMetrics(id2label=id2label)
+    # self.my_metrics = self.my_metrics.to('cpu')
 
   def configure_optimizers(self):
     optimizer = torch.optim.Adam(self.parameters(), lr=self.lr)
@@ -61,8 +68,8 @@ class adapterPLWrapper(pl.LightningModule):
   def forward(self, input_ids, attention_mask):
     out = self.classifier(input_ids=input_ids,
                             attention_mask=attention_mask,
-                            return_dict=True)['logits']
-    return self.sig(out)
+                            return_dict=True)
+    return out['logits']
   
   def training_step(self, batch, batch_step):
     batched_sentences, batched_attn, batched_labels = batch
@@ -70,7 +77,7 @@ class adapterPLWrapper(pl.LightningModule):
     model_output = self(batched_sentences, batched_attn)
     loss = self.criterion(model_output, batched_labels)
 
-    self.log('losses/train_loss', loss, on_epoch=True, on_step=False)
+    self.log('losses/train_loss', loss.detach(), on_epoch=True, on_step=False)
 
     return loss
   
@@ -80,8 +87,10 @@ class adapterPLWrapper(pl.LightningModule):
     model_output = self(batched_sentences, batched_attn)
     val_loss = self.criterion(model_output, batched_labels)
 
-    self.log('losses/val_loss', val_loss, on_epoch=True, on_step=False)
-    self.update_metrics(pred = model_output, labels=batched_labels)
+    self.log('losses/val_loss', val_loss.detach(), on_epoch=True, on_step=False)
+
+    sigmoided_output = self.sig(model_output.detach())
+    self.update_metrics(pred = sigmoided_output, labels=batched_labels.detach())
 
     return val_loss
   
@@ -184,9 +193,12 @@ class MyMetrics(Metric):
                     p_classes.append(pc)	
                 pred_classes.append(p_classes)	
 
-            else:    	
-                pred_classes.append([self.id2label[i] for i, m in enumerate(mask) if m])	
-            true_classes.append([self.id2label[i] for i, l in enumerate(example_labels) if l])	
+            else:
+                true_indexes = mask.nonzero(as_tuple=True)[0]   	
+                pred_classes.append([self.id2label[m.item()] for m in true_indexes])
+            mask = example_labels > .5
+            true_indexes = mask.nonzero(as_tuple=True)[0]
+            true_classes.append([self.id2label[l.item()] for l in true_indexes])	
 
         assert len(pred_classes) == len(true_classes), "Error in id2label traduction"	
         return pred_classes, true_classes
