@@ -14,6 +14,10 @@ from transformers.adapter_config import PfeifferConfig, HoulsbyConfig
 
 import os
 
+from utils import prepare_entity_typing_dataset
+from network_classes.classifiers import adapterPLWrapper
+
+
 # the parameters file
 PARAMETERS = "parameters.ini"
 
@@ -93,6 +97,7 @@ def get_model(experiment_name: str,
         model.freeze_model()
     return model
 
+
 def add_classifier(model, labels: dict = {}):
     """Add a classifier to the given model and returns it"""
     
@@ -102,3 +107,35 @@ def add_classifier(model, labels: dict = {}):
         layers=model.configuration("ClassificatorLayers"),
         multilabel = True,
         id2label=labels)
+
+    
+def load_model(experiment_name: str,
+               config_file: str = PARAMETERS,
+               pretrained: str = "bert-base-uncased"):
+
+    """Load the model for a given EXPERIMENT_NAME."""
+
+    # initialize a casual model
+    model = get_model(experiment_name, config_file, pretrained)
+    
+    # read training & development data
+    train_dataset, label2id = prepare_entity_typing_dataset(model, "train", label2id)
+    dev_dataset,   label2id = prepare_entity_typing_dataset(model, "dev",   label2id)
+
+    # add the classifier for the given data
+    add_classifier(model, label2id)
+    
+    # load the .ckpt file with pre-trained weights (if exists)
+    ckpt = os.path.join(model.configuration("PathModel"),
+                        experiment_name + ".ckpt")
+
+    if os.path.isfile(ckpt):
+        model = adapterPLWrapper.load_from_checkpoint(ckpt,
+                                                      adapterClassifier = model,
+                                                      id2label = {v: k for k, v in label2id.items()},
+                                                      lr = model.configuration("LearningRate"))
+    
+        model.to(DEVICE)
+        model.eval()
+    
+    return model, train_dataset, dev_dataset, label2id

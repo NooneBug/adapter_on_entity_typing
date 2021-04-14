@@ -10,6 +10,8 @@ import json
 
 from transformers.modeling_bert import BertModelWithHeads
 
+
+## DEPRECATED
 only_correct = True
 
 model_path = 'trained_models/model-v1.ckpt'
