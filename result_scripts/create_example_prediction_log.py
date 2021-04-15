@@ -21,7 +21,7 @@ max_context_side_size = classifier.configuration('MaxContextSideSize')
 max_entity_size = classifier.configuration('MaxEntitySize')
 
 train_dataset, label2id = prepare_entity_typing_dataset(train_path, max_context_side_size = max_context_side_size, max_entity_size=max_entity_size)
-dev_dataset, _ = prepare_entity_typing_dataset(dev_path, label2id = label2id, max_context_side_size = max_context_side_size, max_entity_size=max_entity_size)
+dev_dataset, label2id = prepare_entity_typing_dataset(dev_path, label2id = label2id, max_context_side_size = max_context_side_size, max_entity_size=max_entity_size)
 
 dev_loader = DataLoader(dev_dataset, batch_size = 100, num_workers=20)
 
