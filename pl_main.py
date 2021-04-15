@@ -58,7 +58,7 @@ def declare_callbacks_and_trainer(early_stopping_patience, epochs, experiment_na
 
     trainer = Trainer(callbacks=callbacks, logger = logger, gpus = 1, 
                       max_epochs=epochs, limit_train_batches=300, 
-                    #   limit_val_batches=.25,
+                      limit_val_batches=.25,
                       precision = 16)
     return trainer
 

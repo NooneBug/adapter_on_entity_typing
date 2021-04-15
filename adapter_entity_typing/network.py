@@ -14,8 +14,8 @@ from transformers.adapter_config import PfeifferConfig, HoulsbyConfig
 
 import os
 
-from utils import prepare_entity_typing_dataset
-from network_classes.classifiers import adapterPLWrapper
+from adapter_entity_typing.utils import prepare_entity_typing_dataset
+from adapter_entity_typing.network_classes.classifiers import adapterPLWrapper
 
 
 # the parameters file
