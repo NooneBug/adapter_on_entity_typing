@@ -11,8 +11,8 @@ def save_dataset(dataset, label2id, path):
   with open(path, 'wb') as out:
     pickle.dump((dataset, label2id), out)
 
-def prepare_entity_typing_dataset(path, label2id = None, load=False, max_context_side_size=-1,  max_entity_size = -1, 
-                                  tokenized_dir="./datasets_tokenized/", dataset_name=""):
+
+def prepare_entity_typing_dataset(model, train_dev_test: str = "train", label2id = None):
   '''
   path: the dataset path (.json)
   label2id: if load == False and path is a (.json) is used to not generate a new dictionary 
@@ -20,47 +20,58 @@ def prepare_entity_typing_dataset(path, label2id = None, load=False, max_context
   load: if load == False a new dataset is created from path;
         if load == True a dataset is loaded from path (togheter with its label2id)
   '''
+  assert train_dev_test in ["train", "dev", "test"]
+  path = model.configuration({"train": "PathInputTrain",
+                              "dev":   "PathInputDev",
+                              "test":  "PathInputTest"}[train_dev_test])
+  max_context_side_size = model.configuration("MaxContentSideSize")
+  max_entity_size       = model.configuration('MaxEntitySize')
+  tokenized_dir         = model.configuration("DatasetTokenizedDir")
+  dataset_name = model.configuration("DatasetName") + "." + train_dev_test
+  
   t = time.time()
-  if load:
-    with open(path, 'rb') as inp:
-      bd, label2id = pickle.load(inp)
-  else:
-    with open(path, 'r') as inp:
-      lines = [json.loads(l) for l in inp.readlines()]
+  with open(path, 'r') as inp:
+    lines = [json.loads(l) for l in inp.readlines()]
 
-    print('... lines red in {:.2f} seconds ...'.format(time.time() - t))
+  print('... lines red in {:.2f} seconds ...'.format(time.time() - t))
 
-    sentences = get_sentences(lines, max_context_side_size, max_entity_size)
-    labels, label2id = get_labels(lines, label2id=label2id)
+  sentences = get_sentences(lines, max_context_side_size, max_entity_size)
+  labels, label2id = get_labels(lines, label2id=label2id)
 
-    if tokenized_dir and not os.path.isdir(tokenized_dir):
-      os.mkdir(tokenized_dir)
-    dataset_file = os.path.join(tokenized_dir, dataset_name)
+  if tokenized_dir and not os.path.isdir(tokenized_dir):
+    os.mkdir(tokenized_dir)
+  dataset_file = os.path.join(tokenized_dir, dataset_name)
 
-    if dataset_name:
-      tokenized_sent = []
-      attn_masks = []
-      if os.path.isfile(dataset_file):
-        print("... reading from cache ...")
-        with open(dataset_file, "r") as dataset_file_tokenized:
-          for line in tqdm(dataset_file_tokenized.readlines()):
-            line_json = json.loads(line)
-            tokenized_sent.append(line_json["tokenized_sent"])
-            attn_masks.append(line_json["attn_masks"])
-        bd = BertDataset(sentences, labels, label_number = len(label2id),
-                         tokenized_sent=tokenized_sent, attn_masks=attn_masks)
-        return bd, label2id
+  if dataset_name:
+    tokenized_sent = []
+    attn_masks = []
+    if os.path.isfile(dataset_file):
+      print("... reading from cache ...")
+      with open(dataset_file, "r") as dataset_file_tokenized:
+        for line in tqdm(dataset_file_tokenized.readlines()):
+          line_json = json.loads(line)
+          tokenized_sent.append(line_json["tokenized_sent"])
+          attn_masks.append(line_json["attn_masks"])
+      bd = BertDataset(sentences, labels, label_number = len(label2id),
+                       tokenized_sent=tokenized_sent, attn_masks=attn_masks)
+      return bd, label2id
 
-    bd = BertDataset(sentences, labels, label_number = len(label2id), 
-                      tokenized_sent = [], attn_masks=[])
-    if dataset_name:
-      with open(dataset_file, "a") as dataset_file_tokenized:
-        for tokenized_sent_i, attn_mask_i in zip(bd.tokenized_sent, bd.attn_masks):
-          out_i = {"tokenized_sent": tokenized_sent_i,
-                   "attn_masks":     attn_mask_i}
-          dataset_file_tokenized.write(json.dumps(out_i) + "\n")
-    return bd, label2id
-          
+  bd = BertDataset(sentences, labels, label_number = len(label2id), 
+                   tokenized_sent = [], attn_masks=[])
+  if dataset_name:
+    with open(dataset_file, "a") as dataset_file_tokenized:
+      for tokenized_sent_i, attn_mask_i in zip(bd.tokenized_sent, bd.attn_masks):
+        out_i = {"tokenized_sent": tokenized_sent_i,
+                 "attn_masks":     attn_mask_i}
+        dataset_file_tokenized.write(json.dumps(out_i) + "\n")
+  return bd, label2id
+
+
+def prepare_entity_typing_datasets(model):
+  train, label2id = prepare_entity_typing_dataset(model, "train")
+  dev,   label2id = prepare_entity_typing_dataset(model, "dev", label2id)
+  test,  label2id = prepare_entity_typing_dataset(model, "test", label2id)
+  return train, dev, test, label2id
     
 
 def get_labels(lines, label2id = None):

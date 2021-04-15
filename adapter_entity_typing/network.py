@@ -14,6 +14,10 @@ from transformers.adapter_config import PfeifferConfig, HoulsbyConfig
 
 import os
 
+from utils import prepare_entity_typing_dataset
+from network_classes.classifiers import adapterPLWrapper
+
+
 # the parameters file
 PARAMETERS = "parameters.ini"
 
@@ -40,8 +44,10 @@ def read_parameters(experiment: str = "DEFAULT",
     parameter_type = {
         "PathInputTrain":      str,     # path of the input training dataset
         "PathInputDev":        str,     # path of the input dev dataset
+        "PathInputTest":       str,     # path of the input test dataset
         "PathOutput":          str,     # path of the output
         "PathModel":           str,     # path for storing the adapeters weights
+        "PretrainedModel":     str,     # the experiment setup for the pretrained model
         "DatasetName":         str,     # the name of the dataset; empty to avoid storing
         "DatasetTokenizedDir": str,     # the directory where the tokenized dataset is (will be) stored
         "AdapterConfig":       str,     # configuration of the adapter (Pfeiffer or Houlsby)
@@ -93,6 +99,7 @@ def get_model(experiment_name: str,
         model.freeze_model()
     return model
 
+
 def add_classifier(model, labels: dict = {}):
     """Add a classifier to the given model and returns it"""
     
@@ -102,3 +109,37 @@ def add_classifier(model, labels: dict = {}):
         layers=model.configuration("ClassificatorLayers"),
         multilabel = True,
         id2label=labels)
+
+    
+def load_model(experiment_name: str,
+               config_file: str = PARAMETERS,
+               pretrained: str = "bert-base-uncased"):
+
+    """Load the model for a given EXPERIMENT_NAME."""
+
+    # initialize a casual model
+    model = get_model(experiment_name, config_file, pretrained)
+    pretrained_model = model.configuration("PretrainedModel")
+    if pretrained_model == "same":
+        pretrained_model = experiment_name
+    
+    # read training & development data
+    train_dataset, dev_dataset, test_dataset, label2id = prepare_entity_typing_datasets(model)
+
+    # add the classifier for the given data
+    add_classifier(model, label2id)
+    
+    # load the .ckpt file with pre-trained weights (if exists)
+    ckpt = os.path.join(model.configuration("PathModel"),
+                        pretrained_model + ".ckpt")
+
+    if os.path.isfile(ckpt):
+        model = adapterPLWrapper.load_from_checkpoint(ckpt,
+                                                      adapterClassifier = model,
+                                                      id2label = {v: k for k, v in label2id.items()},
+                                                      lr = model.configuration("LearningRate"))
+    
+    model.to(DEVICE)
+    model.eval()
+    
+    return model, train_dataset, dev_dataset, test_dataset, label2id
