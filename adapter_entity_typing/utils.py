@@ -11,6 +11,7 @@ def save_dataset(dataset, label2id, path):
   with open(path, 'wb') as out:
     pickle.dump((dataset, label2id), out)
 
+
 def prepare_entity_typing_dataset(model, train_dev_test: str = "train", label2id = None):
   '''
   path: the dataset path (.json)
@@ -64,7 +65,13 @@ def prepare_entity_typing_dataset(model, train_dev_test: str = "train", label2id
                  "attn_masks":     attn_mask_i}
         dataset_file_tokenized.write(json.dumps(out_i) + "\n")
   return bd, label2id
-          
+
+
+def prepare_entity_typing_datasets(model):
+  train, label2id = prepare_entity_typing_dataset(model, "train")
+  dev,   label2id = prepare_entity_typing_dataset(model, "dev", label2id)
+  test,  label2id = prepare_entity_typing_dataset(model, "test", label2id)
+  return train, dev, test, label2id
     
 
 def get_labels(lines, label2id = None):
