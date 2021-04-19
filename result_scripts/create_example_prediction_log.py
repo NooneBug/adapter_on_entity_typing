@@ -3,12 +3,9 @@ from torch.utils.data.dataloader import DataLoader
 from adapter_entity_typing.utils import prepare_entity_typing_dataset
 from adapter_entity_typing.network import get_model, add_classifier
 import pickle
-from torch.nn import Sigmoid 
 from collections import defaultdict
 import torch
 import json
-
-from transformers.modeling_bert import BertModelWithHeads
 
 
 ## DEPRECATED

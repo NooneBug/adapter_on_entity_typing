@@ -36,7 +36,7 @@ def prepare_entity_typing_dataset(model, train_dev_test: str = "train", label2id
   print('... lines red in {:.2f} seconds ...'.format(time.time() - t))
 
   sentences = get_sentences(lines, max_context_side_size, max_entity_size)
-  labels, label2id = get_labels(lines, label2id=label2id)
+  labels, label2id = get_labels(lines, label2id=label2id, test=train_dev_test == 'test')
 
   if tokenized_dir and not os.path.isdir(tokenized_dir):
     os.mkdir(tokenized_dir)
@@ -74,7 +74,7 @@ def prepare_entity_typing_datasets(model):
   return train, dev, test, label2id
     
 
-def get_labels(lines, label2id = None):
+def get_labels(lines, label2id = None, test = False):
   example_labels = [l['y_str'] for l in lines]
   all_labels = [l for e in example_labels for l in e]
   labels = []
@@ -96,8 +96,9 @@ def get_labels(lines, label2id = None):
       try:
         id_labels.append(label2id[l])
       except:
-        label2id[l] = len(label2id)
-        id_labels.append(label2id[l])
+        if not test:
+          label2id[l] = len(label2id)
+          id_labels.append(label2id[l])
     example_id_labels.append(id_labels)
   #
   return example_id_labels, label2id
