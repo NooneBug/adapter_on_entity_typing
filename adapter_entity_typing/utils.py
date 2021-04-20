@@ -24,6 +24,8 @@ def prepare_entity_typing_dataset(model, train_dev_test: str = "train", label2id
   path = model.configuration({"train": "PathInputTrain",
                               "dev":   "PathInputDev",
                               "test":  "PathInputTest"}[train_dev_test])
+  if path == "None":
+    return None, label2id
   max_context_side_size = model.configuration("MaxContextSideSize")
   max_entity_size       = model.configuration('MaxEntitySize')
   tokenized_dir         = model.configuration("DatasetTokenizedDir")

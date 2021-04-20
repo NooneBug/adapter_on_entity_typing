@@ -131,7 +131,7 @@ def load_model(experiment_name: str,
     
     # load the .ckpt file with pre-trained weights (if exists)
     ckpts = filter(lambda x: x.startswith(pretrained_model),
-                   os.listdir(model.configuration("PathModel")))
+                   os.listdir(os.path.dirname(model.configuration("PathModel"))))
     for ckpt in ckpts:
         model = adapterPLWrapper.load_from_checkpoint(os.path.join(model.configuration("PathModel"), ckpt),
                                                       adapterClassifier = model,

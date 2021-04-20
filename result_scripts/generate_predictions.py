@@ -8,10 +8,12 @@ import torch
 import json
 import numpy as np
 
-parameter_tags = ['adapters2_FIGER']
+parameter_tags = ['adapters2_bbn']
 
 config = configparser.ConfigParser()
-config.read(parameter_tags[0])
+config.read("result_scripts/generate_predictions_parameters.ini")
+print(list(config.keys()))
+config = config[parameter_tags[0]]
 
 
 # model_path = config['ModelRootPath'] + config['ModelName']
@@ -46,11 +48,12 @@ macro_examples = {
     "p": [],
     "r": [],
     "f1": []}
-experiment_name = config['ModelName']
-performance_file = config('performanceFile') + config('experiment_name')
-prediction_file = config('predictionFile') + config('experiment_name')
-average_std_file = config('AvgStdFile') + config('experiment_name')
-for model, train_dataset, dev_dataset, test_dataset, label2id in load_model(experiment_name):
+experiment_name = config['experiment_name']
+training_name = config['training_name']
+performance_file = config['performanceFile'] + config['experiment_name']
+prediction_file = config['predictionFile'] + config['experiment_name']
+average_std_file = config['AvgStdFile'] + config['experiment_name']
+for model, train_dataset, dev_dataset, test_dataset, label2id in load_model(training_name):  # , "results_scripts/generate_preditcions_parameters.ini"):
 
     dev_loader = DataLoader(dev_dataset, batch_size = 100, num_workers=20)
     test_loader = DataLoader(test_dataset, batch_size = 100, num_workers=20)
@@ -255,17 +258,17 @@ name = {
     "f1": "f1"
 }
 results = {}
-for results_name, results in zip(["micro", "macro", "example"],
+for result_name, result in zip(["micro", "macro", "example"],
                                  [ micros,  macros, macro_examples]):
-    for k, v in results.items():
+    for k, v in result.items():
         v = np.array(v)
         mu = np.mean(v)
         sd = np.std(v)
-        results["{}_{}".format(results_name, k)] = (mu, sd)
+        results["{}_{}".format(result_name, k)] = (mu, sd)
 
-with open(average_std_file + d + '.txt', 'a') as out:
+with open(average_std_file + '.txt', 'a') as out:
     # out.write('{:^40}\n'.format('-'))
     out.write("model,mu,sd\n")
     for k, (m, s) in results.items():
-        out.write('{k},{:.4f},{:.4f}\n'.format(k, m, s))
+        out.write('{},{:.4f},{:.4f}\n'.format(k, m, s))
     out.write('\n')
