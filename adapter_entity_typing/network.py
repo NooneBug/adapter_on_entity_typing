@@ -65,7 +65,7 @@ def read_parameters(experiment: str = "DEFAULT",
     #
     def get_parameter(p: str):
         nonlocal config, parameter_type
-        return parameter_type.get(p, eval)(config[experiment][p])
+        return parameter_type.get(p, str)(config[experiment][p])
     #
     return get_parameter
 
@@ -113,15 +113,19 @@ def add_classifier(model, labels: dict = {}):
     
 def load_model(experiment_name: str,
                config_file: str = PARAMETERS,
+               training_file: str = PARAMETERS,
                pretrained: str = "bert-base-uncased"):
 
     """Load the model for a given EXPERIMENT_NAME."""
 
     # initialize a casual model
-    model = get_model(experiment_name, config_file, pretrained)
+    test_configuration = read_parameters(experiment_name, config_file)
+    model = get_model(test_configuration("training_name"), training_file, pretrained)
+    model.test_configuration = test_configuration
     pretrained_model = model.configuration("PretrainedModel")
     if pretrained_model == "same":
-        pretrained_model = experiment_name
+        pretrained_model = model.configuration("ExperimentName")
+    pretrained_folder = os.path.dirname(model.test_configuration("PathModel"))
     
     # read training & development data
     train_dataset, dev_dataset, test_dataset, label2id = prepare_entity_typing_datasets(model)
@@ -130,10 +134,13 @@ def load_model(experiment_name: str,
     add_classifier(model, label2id)
     
     # load the .ckpt file with pre-trained weights (if exists)
-    ckpts = filter(lambda x: x.startswith(pretrained_model),
-                   os.listdir(os.path.dirname(model.configuration("PathModel"))))
+    print(pretrained_model)
+    ckpts = [os.path.join(pretrained_folder, x)
+             for x in os.listdir(pretrained_folder)
+             if x.startswith(pretrained_model)]
+    print(ckpts)
     for ckpt in ckpts:
-        model = adapterPLWrapper.load_from_checkpoint(os.path.join(model.configuration("PathModel"), ckpt),
+        model = adapterPLWrapper.load_from_checkpoint(ckpt,
                                                       adapterClassifier = model,
                                                       id2label = {v: k for k, v in label2id.items()},
                                                       lr = model.configuration("LearningRate"))

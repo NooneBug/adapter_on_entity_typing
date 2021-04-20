@@ -8,9 +8,10 @@ import torch
 import json
 import numpy as np
 
-parameter_tags = ['adapters2_bbn']
 
+parameter_tags = ['adapters2_bbn']
 config = configparser.ConfigParser()
+training_config_file = "result_scripts/generate_predictions_parameters.ini"
 config.read("result_scripts/generate_predictions_parameters.ini")
 print(list(config.keys()))
 config = config[parameter_tags[0]]
@@ -53,7 +54,11 @@ training_name = config['training_name']
 performance_file = config['performanceFile'] + config['experiment_name']
 prediction_file = config['predictionFile'] + config['experiment_name']
 average_std_file = config['AvgStdFile'] + config['experiment_name']
-for model, train_dataset, dev_dataset, test_dataset, label2id in load_model(training_name):  # , "results_scripts/generate_preditcions_parameters.ini"):
+
+
+parameter_tags = ['adapters2_bbn']
+
+for model, train_dataset, dev_dataset, test_dataset, label2id in load_model(parameter_tags[0], training_config_file):  # , "results_scripts/generate_preditcions_parameters.ini"):
 
     dev_loader = DataLoader(dev_dataset, batch_size = 100, num_workers=20)
     test_loader = DataLoader(test_dataset, batch_size = 100, num_workers=20)
@@ -260,6 +265,9 @@ name = {
 results = {}
 for result_name, result in zip(["micro", "macro", "example"],
                                  [ micros,  macros, macro_examples]):
+    print(result_name)
+    print(result)
+    print()
     for k, v in result.items():
         v = np.array(v)
         mu = np.mean(v)
