@@ -14,7 +14,7 @@ from transformers.adapter_config import PfeifferConfig, HoulsbyConfig
 
 import os
 
-from adapter_entity_typing.utils import prepare_entity_typing_dataset
+from adapter_entity_typing.utils import prepare_entity_typing_datasets
 from adapter_entity_typing.network_classes.classifiers import adapterPLWrapper
 
 
@@ -130,16 +130,14 @@ def load_model(experiment_name: str,
     add_classifier(model, label2id)
     
     # load the .ckpt file with pre-trained weights (if exists)
-    ckpt = os.path.join(model.configuration("PathModel"),
-                        pretrained_model + ".ckpt")
-
-    if os.path.isfile(ckpt):
-        model = adapterPLWrapper.load_from_checkpoint(ckpt,
+    ckpts = filter(lambda x: x.startswith(pretrained_model),
+                   os.listdir(model.configuration("PathModel")))
+    for ckpt in ckpts:
+        model = adapterPLWrapper.load_from_checkpoint(os.path.join(model.configuration("PathModel"), ckpt),
                                                       adapterClassifier = model,
                                                       id2label = {v: k for k, v in label2id.items()},
                                                       lr = model.configuration("LearningRate"))
     
-    model.to(DEVICE)
-    model.eval()
-    
-    return model, train_dataset, dev_dataset, test_dataset, label2id
+        model.to(DEVICE)
+        model.eval()
+        yield model, train_dataset, dev_dataset, test_dataset, label2id
