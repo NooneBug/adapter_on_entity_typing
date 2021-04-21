@@ -1,17 +1,16 @@
 from torch.nn.modules.loss import BCELoss
 from torch.utils.data.dataloader import DataLoader
-from adapter_entity_typing.utils import prepare_entity_typing_dataset, save_dataset, get_discrete_pred, compute_metrics
-from adapter_entity_typing.network import get_model, load_model, add_classifier
+from adapter_entity_typing.utils import prepare_entity_typing_dataset
+from adapter_entity_typing.network import get_model, add_classifier
 from torch.utils.data import DataLoader
 from torch.optim import Adam
 import torch
 import numpy as np
 import random
 from tqdm import tqdm
-from adapter_entity_typing.network_classes.classifiers import adapterPLWrapper
+from adapter_entity_typing.network_classes.classifiers import adapterPLWrapper, EarlyStoppingWithColdStart
 from pytorch_lightning.callbacks import ModelCheckpoint
 from pytorch_lightning import Trainer
-from pytorch_lightning.callbacks.early_stopping import EarlyStopping
 from pytorch_lightning.loggers import TensorBoardLogger
 
 
@@ -19,18 +18,7 @@ if torch.cuda.is_available():
   print('gpu on')
   # torch.set_default_tensor_type('torch.cuda.FloatTensor')
 
-class EarlyStoppingWithColdStart(EarlyStopping):
-    def __init__(self, monitor: str, min_delta: float, patience: int, verbose: bool, mode: str, strict: bool, cold_start_epochs: int = 0):
-        super().__init__(monitor=monitor, min_delta=min_delta, patience=patience, verbose=verbose, mode=mode, strict=strict)
-        self.cold_start_epoch_number = cold_start_epochs
-    
-    def on_validation_end(self, trainer, pl_module):
-        if trainer.running_sanity_check:
-            return
-        elif pl_module.current_epoch < self.cold_start_epoch_number:
-            return
-        else:
-            self._run_early_stopping_check(trainer, pl_module)
+
 def declare_callbacks_and_trainer(early_stopping_patience, epochs, experiment_name):
     callbacks = []
 

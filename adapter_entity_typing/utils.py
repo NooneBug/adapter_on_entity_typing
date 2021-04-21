@@ -12,7 +12,7 @@ def save_dataset(dataset, label2id, path):
     pickle.dump((dataset, label2id), out)
 
 
-def prepare_entity_typing_dataset(model, train_dev_test: str = "train", label2id = None):
+def prepare_entity_typing_dataset(model, train_dev_test: str = "train", label2id = None, avoid_cache_reading = False):
   '''
   path: the dataset path (.json)
   label2id: if load == False and path is a (.json) is used to not generate a new dictionary 
@@ -47,7 +47,7 @@ def prepare_entity_typing_dataset(model, train_dev_test: str = "train", label2id
   if dataset_name:
     tokenized_sent = []
     attn_masks = []
-    if os.path.isfile(dataset_file):
+    if os.path.isfile(dataset_file) and not avoid_cache_reading:
       print("... reading from cache ...")
       with open(dataset_file, "r") as dataset_file_tokenized:
         for line in tqdm(dataset_file_tokenized.readlines()):
@@ -57,6 +57,8 @@ def prepare_entity_typing_dataset(model, train_dev_test: str = "train", label2id
       bd = BertDataset(sentences, labels, label_number = len(label2id),
                        tokenized_sent=tokenized_sent, attn_masks=attn_masks)
       return bd, label2id
+    elif avoid_cache_reading:
+      return None, label2id
 
   bd = BertDataset(sentences, labels, label_number = len(label2id), 
                    tokenized_sent = [], attn_masks=[])
@@ -70,7 +72,7 @@ def prepare_entity_typing_dataset(model, train_dev_test: str = "train", label2id
 
 
 def prepare_entity_typing_datasets(model):
-  train, label2id = prepare_entity_typing_dataset(model, "train")
+  train, label2id = prepare_entity_typing_dataset(model, "train", avoid_cache_reading = True)
   dev,   label2id = prepare_entity_typing_dataset(model, "dev", label2id)
   test,  label2id = prepare_entity_typing_dataset(model, "test", label2id)
   return train, dev, test, label2id

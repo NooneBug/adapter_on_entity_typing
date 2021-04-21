@@ -15,7 +15,7 @@ from transformers.adapter_config import PfeifferConfig, HoulsbyConfig
 import os
 
 from adapter_entity_typing.utils import prepare_entity_typing_datasets
-from adapter_entity_typing.network_classes.classifiers import adapterPLWrapper
+from adapter_entity_typing.network_classes.classifiers import adapterPLWrapper, EarlyStoppingWithColdStart
 
 
 # the parameters file
@@ -28,6 +28,7 @@ DEVICE = torch.device("cuda" if torch.cuda.is_available() \
 ADAPTER_CONFIGS = {
             "Pfeiffer": PfeifferConfig,
             "Houlsby" : HoulsbyConfig }
+
 
 def read_parameters(experiment: str = "DEFAULT",
                     file_path: str = PARAMETERS):
@@ -120,18 +121,19 @@ def load_model(experiment_name: str,
 
     # initialize a casual model
     test_configuration = read_parameters(experiment_name, config_file)
-    model = get_model(test_configuration("training_name"), training_file, pretrained)
-    model.test_configuration = test_configuration
-    pretrained_model = model.configuration("PretrainedModel")
+    classification_model = get_model(experiment_name, training_file, pretrained)
+    classification_model.test_configuration = test_configuration
+    pretrained_model = classification_model.configuration("PretrainedModel")
+    configuration = classification_model.configuration
     if pretrained_model == "same":
-        pretrained_model = model.configuration("ExperimentName")
-    pretrained_folder = os.path.dirname(model.test_configuration("PathModel"))
+        pretrained_model = classification_model.configuration("ExperimentName")
+    pretrained_folder = os.path.dirname(classification_model.test_configuration("PathModel"))
     
     # read training & development data
-    train_dataset, dev_dataset, test_dataset, label2id = prepare_entity_typing_datasets(model)
+    train_dataset, dev_dataset, test_dataset, label2id = prepare_entity_typing_datasets(classification_model)
 
     # add the classifier for the given data
-    add_classifier(model, label2id)
+    add_classifier(classification_model, label2id)
     
     # load the .ckpt file with pre-trained weights (if exists)
     print(pretrained_model)
@@ -141,10 +143,11 @@ def load_model(experiment_name: str,
     print(ckpts)
     for ckpt in ckpts:
         model = adapterPLWrapper.load_from_checkpoint(ckpt,
-                                                      adapterClassifier = model,
+                                                      adapterClassifier = classification_model,
                                                       id2label = {v: k for k, v in label2id.items()},
-                                                      lr = model.configuration("LearningRate"))
+                                                      lr = classification_model.configuration("LearningRate"))
     
         model.to(DEVICE)
         model.eval()
+        model.configuration = configuration
         yield model, train_dataset, dev_dataset, test_dataset, label2id

@@ -1,21 +1,22 @@
 import configparser
-from adapter_entity_typing.network_classes.classifiers import adapterPLWrapper
+from adapter_entity_typing.network_classes.classifiers import EarlyStoppingWithColdStart
 from torch.utils.data.dataloader import DataLoader
-from adapter_entity_typing.utils import prepare_entity_typing_datasets
-from adapter_entity_typing.network import get_model, add_classifier, load_model
+from adapter_entity_typing.network import load_model
 from collections import defaultdict
 import torch
 import json
 import numpy as np
+from tqdm import tqdm
 
 
-parameter_tags = ['adapters2_bbn']
+parameter_tags = ['adapter_2_choi']
 config = configparser.ConfigParser()
 training_config_file = "result_scripts/generate_predictions_parameters.ini"
 config.read("result_scripts/generate_predictions_parameters.ini")
 print(list(config.keys()))
 config = config[parameter_tags[0]]
 
+sig = torch.nn.Sigmoid()
 
 # model_path = config['ModelRootPath'] + config['ModelName']
 # classifier = get_model(model_path)
@@ -50,21 +51,31 @@ macro_examples = {
     "r": [],
     "f1": []}
 experiment_name = config['experiment_name']
-training_name = config['training_name']
+# training_name = config['training_name']
 performance_file = config['performanceFile'] + config['experiment_name']
 prediction_file = config['predictionFile'] + config['experiment_name']
 average_std_file = config['AvgStdFile'] + config['experiment_name']
 
+dev_or_test = config['dev_or_test']
+if dev_or_test == 'both':
+    keys = ['dev', 'test']
+elif dev_or_test == 'dev':
+    keys = ['dev']
+elif dev_or_test == 'test':
+    keys = ['test']
+else:
+    raise Exception('please provide a meaningfull value for "dev_or_test"')
 
-parameter_tags = ['adapters2_bbn']
+macros = {k: {subk: [] for subk in keys} for k, v in macros.items()}
+micros = {k: {subk: [] for subk in keys} for k, v in macros.items()}
+macro_examples= {k: {subk: [] for subk in keys} for k, v in macros.items()}
 
-for model, train_dataset, dev_dataset, test_dataset, label2id in load_model(parameter_tags[0], training_config_file):  # , "results_scripts/generate_preditcions_parameters.ini"):
+for model, _, dev_dataset, test_dataset, label2id in load_model(parameter_tags[0]):  # , "results_scripts/generate_preditcions_parameters.ini"):
 
     dev_loader = DataLoader(dev_dataset, batch_size = 100, num_workers=20)
     test_loader = DataLoader(test_dataset, batch_size = 100, num_workers=20)
     id2label = {v: k for k,v in label2id.items()}
 
-    dev_or_test = config('dev_or_test')
 
     if dev_or_test == 'both':
         data_to_pred = ['dev', 'test']
@@ -94,7 +105,7 @@ for model, train_dataset, dev_dataset, test_dataset, label2id in load_model(para
             
             mention = mention.cuda()
             attn = attn.cuda()
-            preds = model(mention, attn)
+            preds = sig(model(mention, attn))
             
             batch_preds = []
             batch_preds_and_logits = []
@@ -144,6 +155,7 @@ for model, train_dataset, dev_dataset, test_dataset, label2id in load_model(para
         actual_count = defaultdict(int)
         predict_count = defaultdict(int)
         # compute singular class performances and macro performances
+        bar = tqdm(desc="computing macro performances", total=len(all_preds))
         for labels, preds in zip(all_labels, all_preds):
             for pred in preds:
                 predict_count[pred] += 1
@@ -153,6 +165,8 @@ for model, train_dataset, dev_dataset, test_dataset, label2id in load_model(para
             
             for label in labels:
                 actual_count[label] += 1
+            bar.update(1)
+        bar.close()
 
         def compute_f1(p, r):
             return (2*p*r)/(p + r) if p + r else 0
@@ -165,52 +179,60 @@ for model, train_dataset, dev_dataset, test_dataset, label2id in load_model(para
         macro_r = np.mean(list(recalls.values()))
         macro_f1 = compute_f1(macro_p, macro_r)
 
-        macros['p'].append(macro_p)
-        macros['r'].append(macro_r)
-        macros['f1'].append(macro_f1)
+        macros['p'][d].append(macro_p)
+        macros['r'][d].append(macro_r)
+        macros['f1'][d].append(macro_f1)
 
         #compute macro_example performances
         ma_e_precisions = []
         ma_e_recalls = []
         n = len(all_labels)
 
+        bar = tqdm(desc="computing macro examples performances", total=len(all_preds))
+        
         for labels, preds in zip(all_labels, all_preds):
             correct_preds = len(set(labels).intersection(set(preds)))
             ma_e_precisions.append(correct_preds/len(preds))
             ma_e_recalls.append(correct_preds / len(labels))
+            bar.update(1)
+        bar.close()
 
         macro_example_p = np.mean(ma_e_precisions)
         macro_example_r = np.mean(ma_e_recalls)
         macro_example_f1 = compute_f1(macro_example_p, macro_example_r)
         
-        macro_examples['p'].append(macro_example_p)
-        macro_examples['r'].append(macro_example_r)
-        macro_examples['f1'].append(macro_example_f1)
+        macro_examples['p'][d].append(macro_example_p)
+        macro_examples['r'][d].append(macro_example_r)
+        macro_examples['f1'][d].append(macro_example_f1)
         
         #compute micro performances
         micro_correct_counter = 0
         micro_true_counter = 0
         micro_pred_counter = 0
 
+        bar = tqdm(desc="computing micro performances", total=len(all_preds))       
         for labels, preds in zip(all_labels, all_preds):
             micro_true_counter += len(labels)
             micro_pred_counter += len(preds)
             correct_preds = len(set(labels).intersection(set(preds)))
-            micro_correct_counter += len(correct_preds)
-        
+            micro_correct_counter += correct_preds
+            bar.update(1)
+        bar.close()
         micro_p = micro_correct_counter/micro_pred_counter
         micro_r = micro_correct_counter/micro_true_counter
         micro_f1 = compute_f1(micro_p, micro_r)
 
-        micros['p'].append(micro_p)
-        micros['r'].append(micro_r)
-        micros['f1'].append(micro_f1)
+        micros['p'][d].append(micro_p)
+        micros['r'][d].append(micro_r)
+        micros['f1'][d].append(micro_f1)
 
         with open(dataset_paths[dataset_id], 'r') as inp:
             lines = [json.loads(l) for l in inp.readlines()]
 
-        label_sentences = {k: [] for k in label2id.keys()}
+        label_sentences = defaultdict(list)
 
+        bar = tqdm(desc="generating sentences", total=len(lines))
+        
         for l, preds_and_logits, top_k in zip(lines, all_preds_and_logits, top_k_labels):
             sentence = ' '.join(l['left_context_token'])
             sentence += ' ' + l['mention_span'] + ' '
@@ -219,10 +241,12 @@ for model, train_dataset, dev_dataset, test_dataset, label2id in load_model(para
 
             for lab in labels:
                 label_sentences[lab].append((sentence, l['mention_span'], preds_and_logits, top_k, labels))
+            bar.update(1)
+        bar.close()
 
         ordered_labels = list(sorted(label2id.keys()))
 
-        with open(prediction_file + d + '.txt', 'a') as out:
+        with open(prediction_file + '_' + d + '.txt', 'a') as out:
             out.write('{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n'.format('label_#', 'precision', 
                                                                             'recall', 'f1', 'sentence', 'mention', 
                                                                             'preds_and_logits', 'top_k_labels_and_logits', 'true_labels'))
@@ -240,8 +264,8 @@ for model, train_dataset, dev_dataset, test_dataset, label2id in load_model(para
                                                                                                 true_label)
                     out.write(out_string)
                     i += 1
-        with open(performance_file + d + '.txt', 'a') as out:
-            out.write('{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n'.format('macro_examples_p', 'macro_examples_r', 'macro_examples_f1'
+        with open(performance_file + '_' + d + '.txt', 'a') as out:
+            out.write('{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n'.format('macro_examples_p', 'macro_examples_r', 'macro_examples_f1',
                                                                     'macro_p','macro_r', 'macro_f1',
                                                                     'micro_p', 'micro_r', 'micro_f1'))
             out.write('{:.4f}\t{:.4f}\t{:.4f}\t{:.4f}\t{:.4f}\t{:.4f}\t{:.4f}\t{:.4f}\t{:.4f}\n'.format(macro_example_p,
@@ -262,21 +286,22 @@ name = {
     "r": "recall",
     "f1": "f1"
 }
-results = {}
-for result_name, result in zip(["micro", "macro", "example"],
-                                 [ micros,  macros, macro_examples]):
-    print(result_name)
-    print(result)
-    print()
-    for k, v in result.items():
-        v = np.array(v)
-        mu = np.mean(v)
-        sd = np.std(v)
-        results["{}_{}".format(result_name, k)] = (mu, sd)
+for d in keys:
+    results = {}
+    for result_name, result in zip(["micro", "macro", "example"],
+                                    [ micros,  macros, macro_examples]):
+        print(result_name)
+        print(result)
+        print()
+        for k, v in result.items():
+            v = np.array(v[d])
+            mu = np.mean(v)
+            sd = np.std(v)
+            results["{}_{}".format(result_name, k)] = (mu, sd)
 
-with open(average_std_file + '.txt', 'a') as out:
-    # out.write('{:^40}\n'.format('-'))
-    out.write("model,mu,sd\n")
-    for k, (m, s) in results.items():
-        out.write('{},{:.4f},{:.4f}\n'.format(k, m, s))
-    out.write('\n')
+    with open(average_std_file + '_'+ d + '.txt', 'a') as out:
+        # out.write('{:^40}\n'.format('-'))
+        out.write("model,mu,sd\n")
+        for k, (m, s) in results.items():
+            out.write('{},{:.4f},{:.4f}\n'.format(k, m, s))
+        out.write('\n')

@@ -5,7 +5,7 @@ import pytorch_lightning as pl
 from pytorch_lightning.metrics import Metric
 import numpy as np
 from torch.nn.modules.loss import BCELoss, BCEWithLogitsLoss
-
+from pytorch_lightning.callbacks.early_stopping import EarlyStopping
 
 
 # class SimpleClassifier(BertModelWithHeads):
@@ -18,6 +18,19 @@ from torch.nn.modules.loss import BCELoss, BCEWithLogitsLoss
 #                             attention_mask=attention_mask,
 #                             return_dict=True)['logits']
 #       return self.sig(out)
+
+class EarlyStoppingWithColdStart(EarlyStopping):
+    def __init__(self, monitor: str, min_delta: float, patience: int, verbose: bool, mode: str, strict: bool, cold_start_epochs: int = 0):
+        super().__init__(monitor=monitor, min_delta=min_delta, patience=patience, verbose=verbose, mode=mode, strict=strict)
+        self.cold_start_epoch_number = cold_start_epochs
+    
+    def on_validation_end(self, trainer, pl_module):
+        if trainer.running_sanity_check:
+            return
+        elif pl_module.current_epoch < self.cold_start_epoch_number:
+            return
+        else:
+            self._run_early_stopping_check(trainer, pl_module)
 
 class adapterPLWrapper(pl.LightningModule):
   def __init__(self, adapterClassifier, id2label, lr) -> None:
