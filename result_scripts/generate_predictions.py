@@ -50,6 +50,7 @@ macro_examples = {
     "p": [],
     "r": [],
     "f1": []}
+    
 experiment_name = config['experiment_name']
 # training_name = config['training_name']
 performance_file = config['performanceFile'] + config['experiment_name']
