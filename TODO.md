@@ -10,8 +10,8 @@ DEADLINE: 27/04
 - [ ] Manuel : generate results of from scratch model on filtered datasets (DOMAIN ADAPTATION):
   - [ ] trained from scratch on figer, tested on:
     - [X]  BBN filtered with figer (BBN_into_FIGER)
-    - [ ]  ONTO filtered with figer (Ontonotes_into_FIGER)
-    - [ ]  CHOI filtered with figer (choi_into_FIGER)
+    - [X]  ONTO filtered with figer (Ontonotes_into_FIGER)
+    - [X]  CHOI filtered with figer (choi_into_FIGER)
   - [ ] trained from scratch on choi, tested on:
     - [ ]  BBN filtered with choi (BBN_into_choi)
     - [ ]  ONTO filtered with choi (Ontonotes_into_choi)
