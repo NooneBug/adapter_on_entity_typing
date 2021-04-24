@@ -8,16 +8,29 @@ import json
 import numpy as np
 from tqdm import tqdm
 
-def traduce_labels(original_label, mapping_dict):
-    try:
-        return mapping_dict[original_label]
-    except:
+
+def filter_label(original_label, mapping_dict):
+    if original_label in mapping_dict:
+        return [original_label]
+    else:
         return []
 
 
-parameter_tags = ['adapter_2_choi_into_bbn']
+def take_first_k_filtered(predictions, mapping_dict, id2label, k):
+    k_predicted_values = []
+    k_predicted_idxs = []
+    for predicted_value, value_id in zip(*torch.topk(predictions, k = len(predictions))):
+        translation = filter_label(id2label[value_id.item()], mapping_dict)
+        if translation:
+            k_predicted_values.append(predicted_value.item())
+            k_predicted_idxs.append(value_id.item())
+        if len(k_predicted_values) >= k:
+            break
+    return k_predicted_values, k_predicted_idxs
+
+
+parameter_tags = ['adapter_2_choi_to_figer']
 config = configparser.ConfigParser()
-training_config_file = "result_scripts/generate_predictions_parameters.ini"
 config.read("result_scripts/generate_predictions_parameters.ini")
 print(list(config.keys()))
 config = config[parameter_tags[0]]
@@ -38,9 +51,9 @@ macro_examples = {
     "f1": []}
     
 experiment_name = config['experiment_name']
-performance_file = config['performanceFile'] + config['experiment_name']
-prediction_file = config['predictionFile'] + config['experiment_name']
-average_std_file = config['AvgStdFile'] + config['experiment_name']
+performance_file = config['performanceFile'] + parameter_tags[0]
+prediction_file = config['predictionFile'] + parameter_tags[0]
+average_std_file = config['AvgStdFile'] + parameter_tags[0]
 
 dev_or_test = config['dev_or_test']
 if dev_or_test == 'both':
@@ -56,26 +69,30 @@ macros = {k: {subk: [] for subk in keys} for k, v in macros.items()}
 micros = {k: {subk: [] for subk in keys} for k, v in macros.items()}
 macro_examples= {k: {subk: [] for subk in keys} for k, v in macros.items()}
 
-for model, dev_dataset, test_dataset, label2id, mapping_dict in load_model_with_nonnative_datasets(experiment_name, 'results_scripts/generate_preditcions_parameters.ini'):  # , "results_scripts/generate_preditcions_parameters.ini"):
+batch_size = 100
 
-    dev_loader = DataLoader(dev_dataset, batch_size = 100, num_workers=20)
-    test_loader = DataLoader(test_dataset, batch_size = 100, num_workers=20)
+for model, dev_dataset, test_dataset, label2id, mapping_dict in load_model_with_nonnative_datasets(parameter_tags[0],
+                                                                                                    experiment_name, 
+                                                                                                    config_file = 'result_scripts/generate_predictions_parameters.ini'):  # , "results_scripts/generate_preditcions_parameters.ini"):
+
+    dev_loader = DataLoader(dev_dataset, batch_size = batch_size, num_workers=20)
+    test_loader = DataLoader(test_dataset, batch_size = batch_size, num_workers=20)
     id2label = {v: k for k,v in label2id.items()}
 
     if dev_or_test == 'both':
         data_to_pred = ['dev', 'test']
         datasets = [dev_loader, test_loader]
-        dataset_paths = [model.configuration('PathInputDev'), model.configuration('PathInputTest')]
+        dataset_paths = [config['NonNativeDev'], config['NonNativeTest']]
 
     elif dev_or_test == 'dev':
         data_to_pred = ['dev']
         datasets = [dev_loader]
-        dataset_paths = [model.configuration('PathInputDev')]
+        dataset_paths = [config['NonNativeDev']]
 
     elif dev_or_test == 'test':
         data_to_pred = ['test']
         datasets = [test_loader]
-        dataset_paths = [model.configuration('PathInputTest')]
+        dataset_paths = [config['NonNativeTest']]
 
     else:
         raise Exception('please provide a meaningfull value for "dev_or_test"')
@@ -86,8 +103,11 @@ for model, dev_dataset, test_dataset, label2id, mapping_dict in load_model_with_
         all_labels = []
         top_k_labels = []
         loader = datasets[dataset_id]
-        for mention, attn, labels in loader:
-            
+        batch_start_index = 0
+
+        for mention, attn in loader:
+            batch_labels = loader.dataset.labels[batch_start_index: batch_start_index + batch_size]
+            batch_start_index += batch_size
             mention = mention.cuda()
             attn = attn.cuda()
             preds = sig(model(mention, attn))
@@ -98,20 +118,26 @@ for model, dev_dataset, test_dataset, label2id, mapping_dict in load_model_with_
             for i, pred in enumerate(preds):
                 mask = pred > .5
                 ex_preds = []
-                ex_preds_and_logits = []   
+                ex_preds_and_logits = []
                 pred_ids =  mask.nonzero()
                 no_pred = True
                 for p in pred_ids:
-                    ex_preds.extend(traduce_labels(id2label[p.item()], mapping_dict))
-                    ex_preds_and_logits.extend((traduce_labels(id2label[p.item()], mapping_dict), 
-                                                                round(preds[i][p].item(), 3)))
+                    filtered_label = filter_label(id2label[p.item()], mapping_dict)
+                    ex_preds.extend(filtered_label)
+                    if filtered_label:
+                        ex_preds_and_logits.append((filtered_label, 
+                                                    round(pred[p].item(), 3)))
                     no_pred = False
                 # sort logits by pred
-                topk_values, topk_indexes = torch.topk(pred, k = 5)
+                
+                topk_values, topk_indexes = take_first_k_filtered(pred, 
+                                                                    mapping_dict, 
+                                                                    id2label, 
+                                                                    k = 5)
                 top_k_l = []
                 for val, index in zip(topk_values, topk_indexes):
-                    val = round(val.item(), 3)
-                    lab = traduce_labels(id2label[index.item()], mapping_dict)
+                    val = round(val, 3)
+                    lab = filter_label(id2label[index], mapping_dict)
                     top_k_l.append((lab, val))
                 
                 if no_pred:
@@ -127,14 +153,6 @@ for model, dev_dataset, test_dataset, label2id, mapping_dict in load_model_with_
             all_preds_and_logits.extend(batch_preds_and_logits)
             top_k_labels.extend(batch_top_k_labels)
 
-            mask = labels == 1
-            batch_labels = []
-            for m in mask:
-                ex_labels = []
-                labels_ids = m.nonzero()
-                for l in labels_ids:
-                    ex_labels.extend(traduce_labels(id2label[l.item()], mapping_dict))
-                batch_labels.append(ex_labels)
             all_labels.extend(batch_labels)
 
         correct_count = defaultdict(int)
@@ -178,7 +196,10 @@ for model, dev_dataset, test_dataset, label2id, mapping_dict in load_model_with_
         
         for labels, preds in zip(all_labels, all_preds):
             correct_preds = len(set(labels).intersection(set(preds)))
-            ma_e_precisions.append(correct_preds/len(preds))
+            if len(preds) > 0:
+                ma_e_precisions.append(correct_preds/len(preds))
+            else:
+                ma_e_precisions.append(0)
             ma_e_recalls.append(correct_preds / len(labels))
             bar.update(1)
         bar.close()
@@ -204,7 +225,7 @@ for model, dev_dataset, test_dataset, label2id, mapping_dict in load_model_with_
             micro_correct_counter += correct_preds
             bar.update(1)
         bar.close()
-        micro_p = micro_correct_counter/micro_pred_counter
+        micro_p = micro_correct_counter/micro_pred_counter if micro_pred_counter else 0
         micro_r = micro_correct_counter/micro_true_counter
         micro_f1 = compute_f1(micro_p, micro_r)
 

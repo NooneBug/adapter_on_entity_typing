@@ -111,7 +111,8 @@ def add_classifier(model, labels: dict = {}):
         multilabel = True,
         id2label=labels)
 
-def load_model_with_nonnative_datasets(experiment_name: str,
+def load_model_with_nonnative_datasets(experiment_parameters: str, 
+                                        experiment_name: str,
                                         config_file: str = PARAMETERS,
                                         training_file: str = PARAMETERS,
                                         pretrained: str = "bert-base-uncased"):
@@ -119,7 +120,7 @@ def load_model_with_nonnative_datasets(experiment_name: str,
     """Load the model for a given EXPERIMENT_NAME."""
 
     # initialize a casual model
-    test_configuration = read_parameters(experiment_name, config_file)
+    test_configuration = read_parameters(experiment_parameters, config_file)
     classification_model = get_model(experiment_name, training_file, pretrained)
     classification_model.test_configuration = test_configuration
     pretrained_model = classification_model.configuration("PretrainedModel")
@@ -153,7 +154,7 @@ def load_model_with_nonnative_datasets(experiment_name: str,
     train_dataset, dev_dataset, test_dataset, label2id = prepare_entity_typing_datasets(classification_model)
 
     nonnative_dev_dataset = prepare_entity_typing_dataset_only_sentences_and_string_labels(nonnnative_dev, classification_model)
-    nonnative_test_dataset = prepare_entity_typing_dataset_only_sentences_and_string_labels(nonnnative_test, classification_model, train_dev_test = 'test')
+    nonnative_test_dataset = prepare_entity_typing_dataset_only_sentences_and_string_labels(nonnnative_test, classification_model)
 
     # add the classifier for the given data
     add_classifier(classification_model, label2id)

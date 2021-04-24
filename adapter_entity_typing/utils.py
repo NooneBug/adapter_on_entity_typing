@@ -31,7 +31,7 @@ def prepare_entity_typing_dataset_only_sentences_and_string_labels(path, model):
 
   labels = get_labels(lines, only_labels = True)
 
-  bd = BertDatasetWithStringLabels(sentences, labels)
+  bd = BertDatasetWithStringLabels(sentences, labels, tokenized_sent = [], attn_masks = [])
   
   return bd
 
@@ -112,6 +112,8 @@ def prepare_entity_typing_datasets(model):
 
 def get_labels(lines, label2id = None, test = False, only_labels = False):
   example_labels = [l['y_str'] for l in lines]
+  if only_labels:
+    return example_labels
   all_labels = [l for e in example_labels for l in e]
   labels = []
   print('... generating label set ...')
@@ -120,9 +122,7 @@ def get_labels(lines, label2id = None, test = False, only_labels = False):
     if l not in labels:
       labels.append(l)
   #
-  if only_labels:
-    return labels
-  elif not label2id:
+  if not label2id:
     label2id = {k:i for i, k in enumerate(labels)}
   #
   example_id_labels = []

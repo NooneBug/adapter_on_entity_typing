@@ -7,7 +7,7 @@ from tqdm import tqdm
 
 
 class BertDatasetWithStringLabels(Dataset):
-    def __init__(self, sent, labels, tokenized_sent = [], attn_masks = []):
+    def __init__(self, sent, labels, tokenized_sent, attn_masks):
         self.sent = sent
         self.labels = labels
         self.tokenizer = AutoTokenizer.from_pretrained("bert-base-uncased")
@@ -40,7 +40,7 @@ class BertDatasetWithStringLabels(Dataset):
             self.attn_masks.append(tok['attention_mask'][i])
         
     def __getitem__(self, idx):
-        return np.asarray(self.tokenized_sent[idx]), np.asarray(self.attn_masks[idx]), self.label[idx]
+        return np.asarray(self.tokenized_sent[idx]), np.asarray(self.attn_masks[idx])
 
     def __len__(self):
         return len(self.tokenized_sent)
