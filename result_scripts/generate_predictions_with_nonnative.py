@@ -1,15 +1,21 @@
 import configparser
 from adapter_entity_typing.network_classes.classifiers import EarlyStoppingWithColdStart
 from torch.utils.data.dataloader import DataLoader
-from adapter_entity_typing.network import load_model
+from adapter_entity_typing.network import load_model, load_model_with_nonnative_datasets
 from collections import defaultdict
 import torch
 import json
 import numpy as np
 from tqdm import tqdm
 
+def traduce_labels(original_label, mapping_dict):
+    try:
+        return mapping_dict[original_label]
+    except:
+        return []
 
-parameter_tags = ['adapter_2_choi']
+
+parameter_tags = ['adapter_2_choi_into_bbn']
 config = configparser.ConfigParser()
 training_config_file = "result_scripts/generate_predictions_parameters.ini"
 config.read("result_scripts/generate_predictions_parameters.ini")
@@ -17,26 +23,6 @@ print(list(config.keys()))
 config = config[parameter_tags[0]]
 
 sig = torch.nn.Sigmoid()
-
-# model_path = config['ModelRootPath'] + config['ModelName']
-# classifier = get_model(model_path)
-
-# max_context_side_size = classifier.configuration('MaxContextSideSize')
-# max_entity_size = classifier.configuration('MaxEntitySize')
-
-# train_dataset, dev_dataset, test_dataset, label2id = prepare_entity_typing_datasets(classifier)
-
-
-# vocab_len = len(id2label)
-
-# add_classifier(model = classifier, labels = label2id)
-
-# model = adapterPLWrapper.load_from_checkpoint(model_path, 
-#                                                 adapterClassifier = classifier, 
-#                                                 id2label = id2label, 
-#                                                 lr = 1e-4)
-# model.cuda()
-# model.eval()
 
 micros = {
     "p": [],
@@ -70,12 +56,11 @@ macros = {k: {subk: [] for subk in keys} for k, v in macros.items()}
 micros = {k: {subk: [] for subk in keys} for k, v in macros.items()}
 macro_examples= {k: {subk: [] for subk in keys} for k, v in macros.items()}
 
-for model, _, dev_dataset, test_dataset, label2id in load_model(parameter_tags[0]):  # , "results_scripts/generate_preditcions_parameters.ini"):
+for model, dev_dataset, test_dataset, label2id, mapping_dict in load_model_with_nonnative_datasets(experiment_name, 'results_scripts/generate_preditcions_parameters.ini'):  # , "results_scripts/generate_preditcions_parameters.ini"):
 
     dev_loader = DataLoader(dev_dataset, batch_size = 100, num_workers=20)
     test_loader = DataLoader(test_dataset, batch_size = 100, num_workers=20)
     id2label = {v: k for k,v in label2id.items()}
-
 
     if dev_or_test == 'both':
         data_to_pred = ['dev', 'test']
@@ -117,19 +102,20 @@ for model, _, dev_dataset, test_dataset, label2id in load_model(parameter_tags[0
                 pred_ids =  mask.nonzero()
                 no_pred = True
                 for p in pred_ids:
-                    ex_preds.append(id2label[p.item()])
-                    ex_preds_and_logits.append((id2label[p.item()], round(preds[i][p].item(), 3)))
+                    ex_preds.extend(traduce_labels(id2label[p.item()], mapping_dict))
+                    ex_preds_and_logits.extend((traduce_labels(id2label[p.item()], mapping_dict), 
+                                                                round(preds[i][p].item(), 3)))
                     no_pred = False
                 # sort logits by pred
                 topk_values, topk_indexes = torch.topk(pred, k = 5)
                 top_k_l = []
                 for val, index in zip(topk_values, topk_indexes):
                     val = round(val.item(), 3)
-                    lab = id2label[index.item()]
+                    lab = traduce_labels(id2label[index.item()], mapping_dict)
                     top_k_l.append((lab, val))
                 
                 if no_pred:
-                    ex_preds.append(top_k_l[0][0])
+                    ex_preds.extend(top_k_l[0][0])
                     ex_preds_and_logits.append(top_k_l[0])
 
                 sorted_ex_preds_and_logits = sorted(ex_preds_and_logits, key=lambda tup: tup[1], reverse = True)
@@ -147,7 +133,7 @@ for model, _, dev_dataset, test_dataset, label2id in load_model(parameter_tags[0
                 ex_labels = []
                 labels_ids = m.nonzero()
                 for l in labels_ids:
-                    ex_labels.append(id2label[l.item()])
+                    ex_labels.extend(traduce_labels(id2label[l.item()], mapping_dict))
                 batch_labels.append(ex_labels)
             all_labels.extend(batch_labels)
 
