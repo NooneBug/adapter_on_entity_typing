@@ -8,14 +8,14 @@ DEADLINE: 27/04
 - [X] Manuel : generate results for bert_ft_2 for choi
 - [ ] Manuel : train and generate results for bert_ft_2 for figer
 - [ ] Manuel : generate results of from scratch model on filtered datasets (DOMAIN ADAPTATION):
-  - [ ] trained from scratch on figer, tested on:
+  - [X] trained from scratch on figer, tested on:
     - [X]  BBN filtered with figer (BBN_into_FIGER)
     - [X]  ONTO filtered with figer (Ontonotes_into_FIGER)
     - [X]  CHOI filtered with figer (choi_into_FIGER)
   - [ ] trained from scratch on choi, tested on:
-    - [ ]  BBN filtered with choi (BBN_into_choi)
+    - [X]  BBN filtered with choi (BBN_into_choi)
     - [ ]  ONTO filtered with choi (Ontonotes_into_choi)
-    - [ ]  FIGER filtered with choi (figer_into_choi)
+    - [X]  FIGER filtered with choi (figer_into_choi)
 - [ ] Manuel : generate results of from scratch model on filtered datasets:
   - [ ] trained from scratch on figer, tested on:
     - [ ] FIGER filtered with BBN (figer_into_BBN)
