@@ -4,7 +4,7 @@ DEADLINE: 27/04
 
 /datahdd/vmanuel/entity_typing_all_datasets/data/entity_typing_original_datasets/mapped_datasets
 
-- [ ] Manuel : generate filtered datasets with original labels
+- [X] Manuel : generate filtered datasets with original labels
 - [ ] Manuel : generate results for bert_ft_2 for choi
 - [ ] Manuel : generate results for bert_ft_2 for figer
 - [ ] Manuel : generate results of from scratch model on filtered datasets (DOMAIN ADAPTATION):
