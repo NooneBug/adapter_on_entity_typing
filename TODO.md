@@ -28,10 +28,10 @@ DEADLINE: 27/04
 - [ ] Manuel : compute p-values on micro and macro
 - [ ] Manuel : write results on latex
 
-- [ ] Federico : computare le performance come sopra
+- [X] Federico : computare le performance come sopra
 - [ ] Federico : disegnare grafici performances (micro e macro_examples):
-  - [ ] grafico diviso in 4 sottografici:
-    - [ ] sottografico BBN: barchart con 4 bin (BBN test, BBN test mapped on Onto, BBN test mapped on figer, BBN test mapped on choi)
-      - [ ] ogni barchart ha 3 (4?) barre (bert_ft_2_bbn, adapters_2_bbn, adapters_16_bbn, Onoe(?))   
+  - [X] grafico diviso in 4 sottografici:
+    - [X] sottografico BBN: barchart con 4 bin (BBN test, BBN test mapped on Onto, BBN test mapped on figer, BBN test mapped on choi)
+      - [X] ogni barchart ha 3 (4?) barre (bert_ft_2_bbn, adapters_2_bbn, adapters_16_bbn, Onoe(?))   
 
 - [ ] Take a vacation for a YEAR
