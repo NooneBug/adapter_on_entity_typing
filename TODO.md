@@ -6,7 +6,7 @@ DEADLINE: 27/04
 
 - [X] Manuel : generate filtered datasets with original labels
 - [X] Manuel : generate results for bert_ft_2 for choi
-- [ ] Manuel : train and generate results for bert_ft_2 for figer
+- [X] Manuel : train and generate results for bert_ft_2 for figer
 - [ ] Manuel : generate results of from scratch model on filtered datasets (DOMAIN ADAPTATION):
   - [X] trained from scratch on figer, tested on:
     - [X]  BBN filtered with figer (BBN_into_FIGER)
