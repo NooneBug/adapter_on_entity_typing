@@ -132,7 +132,7 @@ def load_model_with_nonnative_datasets(experiment_parameters: str,
     native_dataset_name = test_configuration("NativeDatasetName")
     if native_dataset_name == 'bbn':
         mappings = import_bbn_mappings()
-    elif native_dataset_name == 'ontonotes':
+    elif native_dataset_name == 'onto':
         mappings = import_ontonotes_mappings()
     elif native_dataset_name == 'figer':
         mappings = import_figer_mappings()
@@ -142,7 +142,7 @@ def load_model_with_nonnative_datasets(experiment_parameters: str,
         raise Exception('please provide a valid value for NativeDatasetName')
     
     nonnative_dataset_name = test_configuration("NonNativeDatasetName")
-    if nonnative_dataset_name in ['bbn', 'figer', 'ontonotes', 'choi']:
+    if nonnative_dataset_name in ['bbn', 'figer', 'onto', 'choi']:
         mapping_dict = mappings[nonnative_dataset_name]
     else:
         raise Exception('please provide a valid value for NonNativeDatasetName')

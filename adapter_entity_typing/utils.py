@@ -110,8 +110,13 @@ def prepare_entity_typing_datasets(model):
   return train, dev, test, label2id
     
 
-def get_labels(lines, label2id = None, test = False, only_labels = False):
-  example_labels = [l['y_str'] for l in lines]
+def get_labels(lines, label2id = None, test = False, only_labels = False, ):
+  if test:
+    label_key = 'original_types'
+  else:
+    label_key = 'y_str'
+
+  example_labels = [l[label_key] for l in lines]
   if only_labels:
     return example_labels
   all_labels = [l for e in example_labels for l in e]

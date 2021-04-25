@@ -9,7 +9,7 @@ import numpy as np
 from tqdm import tqdm
 
 
-parameter_tags = ['adapter_2_choi']
+parameter_tags = ['bert_ft_2_figer']
 config = configparser.ConfigParser()
 training_config_file = "result_scripts/generate_predictions_parameters.ini"
 config.read("result_scripts/generate_predictions_parameters.ini")
@@ -51,10 +51,10 @@ macro_examples = {
     "r": [],
     "f1": []}
     
-experiment_name = config['experiment_name']
-performance_file = config['performanceFile'] + config['experiment_name']
-prediction_file = config['predictionFile'] + config['experiment_name']
-average_std_file = config['AvgStdFile'] + config['experiment_name']
+experiment_name = config['fileName']
+performance_file = config['performanceFile'] + experiment_name
+prediction_file = config['predictionFile'] + experiment_name
+average_std_file = config['AvgStdFile'] + experiment_name
 
 dev_or_test = config['dev_or_test']
 if dev_or_test == 'both':
