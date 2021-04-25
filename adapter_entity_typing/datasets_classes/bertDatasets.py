@@ -46,7 +46,7 @@ class BertDatasetWithStringLabels(Dataset):
         return len(self.tokenized_sent)
 
 class BertDataset(Dataset):
-    def __init__(self, sent, labels, label_number, tokenized_sent = [], attn_masks = []):
+    def __init__(self, sent, labels, label_number, tokenized_sent, attn_masks):
         self.sent = sent
         self.labels = labels
         self.label_number = label_number

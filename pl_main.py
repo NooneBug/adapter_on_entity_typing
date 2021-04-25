@@ -29,7 +29,7 @@ def declare_callbacks_and_trainer(early_stopping_patience, epochs, experiment_na
                                         verbose=False,
                                         mode='max',
                                         strict=True,
-                                        cold_start_epochs=70
+                                        cold_start_epochs=10
                                         )
     callbacks.append(early_stop_callback)
 
@@ -53,11 +53,11 @@ def declare_callbacks_and_trainer(early_stopping_patience, epochs, experiment_na
 exps = [
     # "bert_ft_0_", 
     # "bert_ft_1_", 
-    # "bert_ft_2_"
+    "bert_ft_2_"
     # "adapter_1_",
-        "adapter_2_", 
+        # "adapter_2_", 
         # "adapter_4_", "adapter_8_", 
-        "adapter_16_"
+        # "adapter_16_"
     ]
 exps_datasets = [
                 # "choi",

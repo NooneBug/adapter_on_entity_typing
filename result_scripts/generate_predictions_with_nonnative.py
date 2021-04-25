@@ -32,7 +32,6 @@ def take_first_k_filtered(predictions, mapping_dict, id2label, k):
     return k_predicted_values, k_predicted_idxs
 
 
-# parameter_tags = ['adapter_2_choi_to_figer']
 parameter_tags = [sys.argv[1]]
 
 config = configparser.ConfigParser()

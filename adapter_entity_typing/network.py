@@ -132,7 +132,7 @@ def load_model_with_nonnative_datasets(experiment_parameters: str,
     native_dataset_name = test_configuration("NativeDatasetName").lower()
     if native_dataset_name == 'bbn':
         mappings = import_bbn_mappings()
-    elif native_dataset_name == 'ontonotes':
+    elif native_dataset_name == 'onto':
         mappings = import_ontonotes_mappings()
     elif native_dataset_name == 'figer':
         mappings = import_figer_mappings()
