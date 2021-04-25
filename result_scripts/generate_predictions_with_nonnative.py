@@ -9,6 +9,9 @@ import numpy as np
 from tqdm import tqdm
 
 
+import sys
+
+
 def filter_label(original_label, mapping_dict):
     if original_label in mapping_dict:
         return [original_label]
@@ -29,7 +32,9 @@ def take_first_k_filtered(predictions, mapping_dict, id2label, k):
     return k_predicted_values, k_predicted_idxs
 
 
-parameter_tags = ['adapter_2_choi_to_figer']
+# parameter_tags = ['adapter_2_choi_to_figer']
+parameter_tags = [sys.argv[1]]
+
 config = configparser.ConfigParser()
 config.read("result_scripts/generate_predictions_parameters.ini")
 print(list(config.keys()))

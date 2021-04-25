@@ -129,7 +129,7 @@ def load_model_with_nonnative_datasets(experiment_parameters: str,
         pretrained_model = classification_model.configuration("ExperimentName")
     pretrained_folder = os.path.dirname(classification_model.test_configuration("PathModel"))
     
-    native_dataset_name = test_configuration("NativeDatasetName")
+    native_dataset_name = test_configuration("NativeDatasetName").lower()
     if native_dataset_name == 'bbn':
         mappings = import_bbn_mappings()
     elif native_dataset_name == 'ontonotes':
@@ -141,7 +141,7 @@ def load_model_with_nonnative_datasets(experiment_parameters: str,
     else:
         raise Exception('please provide a valid value for NativeDatasetName')
     
-    nonnative_dataset_name = test_configuration("NonNativeDatasetName")
+    nonnative_dataset_name = test_configuration("NonNativeDatasetName").lower()
     if nonnative_dataset_name in ['bbn', 'figer', 'ontonotes', 'choi']:
         mapping_dict = mappings[nonnative_dataset_name]
     else:
