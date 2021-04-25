@@ -8,8 +8,11 @@ import json
 import numpy as np
 from tqdm import tqdm
 
+import sys
 
-parameter_tags = ['bert_ft_2_figer']
+# parameter_tags = ['bert_ft_2_figer']
+parameter_tags = [sys.argv[1]]
+
 config = configparser.ConfigParser()
 training_config_file = "result_scripts/generate_predictions_parameters.ini"
 config.read("result_scripts/generate_predictions_parameters.ini")
