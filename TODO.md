@@ -29,9 +29,9 @@ DEADLINE: 27/04
 - [ ] Manuel: train feature extractor on choi for 4 times
 - [ ] Manuel: train feature extractor on figer for 4 times
 - [ ] Manuel: compute results of FE on choi and figer
-- [ ] Manuel: compute dataset stats:
-  - [ ] datasets lengths/composition
-  - [ ] datasets intersection
+- [X] Manuel: compute dataset stats:
+  - [X] datasets lengths/composition
+  - [X] datasets intersection
 
 - [X] Federico : computare le performance come sopra
 - [X] Federico : disegnare grafici performances (micro e macro_examples):
