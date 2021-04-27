@@ -26,9 +26,9 @@ DEADLINE: 27/04
     - [X] choi filtered with onto (choi_into_Ontonotes)
     - [X] choi filtered with FIGER (choi_into_figer)
 
-- [ ] Manuel: train feature extractor on choi for 4 times
-- [ ] Manuel: train feature extractor on figer for 4 times
-- [ ] Manuel: compute results of FE on choi and figer
+- [X] Manuel: train feature extractor on choi for 4 times
+- [X] Manuel: train feature extractor on figer for 4 times
+- [X] Manuel: compute results of FE on choi and figer
 - [X] Manuel: compute dataset stats:
   - [X] datasets lengths/composition
   - [X] datasets intersection
