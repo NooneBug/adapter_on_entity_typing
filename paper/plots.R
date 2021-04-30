@@ -3,9 +3,17 @@ rm(list = ls())
 
 metrics  <- c("micro", "macro", "experiment")
 datasets <- c("bbn", "choi", "figer", "onto")
+datasets.name <- list("bbn" = "BBN",
+                      "choi" = "Choi",
+                      "figer" = "FIGER",
+                      "onto" = "OntoNotes")
 training_datasets <- datasets  # c("bbn", "onto")
-models   <- c("bert_ft_2", "adapter_2", "adapter_16")
-
+models   <- c("bert_ft_0", "bert_ft_2", "adapter_2", "adapter_16")
+models.name <- c("bert_ft_2"  = "Bert finetuned 2",
+                 "adapter_2"  = "Adapters rf = 2",
+                 "adapter_16" = "Adapters rf = 16")
+confidence <- 0.95
+n <- 5
 
 
 library(tidyverse)
@@ -20,9 +28,12 @@ read_performance <- function(model, train_dataset, mapped) {
                  paste(model, train_dataset, "on", train_dataset, "filtered_w", mapped, "test.txt",
                        sep = "_"))
   data <- read_csv(paste0(directory, file))
-  list("micro"      = filter(data, model == "micro_f1")[1, "mu", drop = TRUE],
-       "macro"      = filter(data, model == "macro_f1")[1, "mu", drop = TRUE],
-       "experiment" = filter(data, model == "example_f1")[1, "mu", drop = TRUE])
+  list("micro"         = filter(data, model == "micro_f1")[1, "mu", drop = TRUE],
+       "micro.sd"      = filter(data, model == "micro_f1")[1, "sd", drop = TRUE],
+       "macro"         = filter(data, model == "macro_f1")[1, "mu", drop = TRUE],
+       "macro.sd"      = filter(data, model == "macro_f1")[1, "sd", drop = TRUE],
+       "experiment"    = filter(data, model == "example_f1")[1, "mu", drop = TRUE],
+       "experiment.sd" = filter(data, model == "example_f1")[1, "sd", drop = TRUE])
 }
 
 
@@ -31,6 +42,48 @@ get_metric_name <- function(m)
        "macro" = "macro f1",
        "experiment" = "experimental micro f1")[[m]]
 
+
+
+for (metric in metrics) {
+  data <- tibble(model = c(),
+                 dataset = c(),
+                 measure = c(),
+                 idc_low = c(),
+                 idc_up  = c())
+  for (train in training_datasets)
+    for (m in models) {
+      m.performance <- read_performance(m, train, train)
+      z <- qt((1 - confidence) / 2, df = n - 1)
+      d <- abs(z) * m.performance[[paste0(metric, ".sd")]] / sqrt(n)
+      data <- data %>%
+        add_row(model = models.name[[m]],
+                dataset = datasets.name[[train]],
+                measure = m.performance[[metric]],
+                idc_low = m.performance[[metric]] - d,
+                idc_up  = m.performance[[metric]] + d)
+    }
+
+  ggplot(data, aes(x = dataset,
+                   y = measure,
+                   fill = model)) +
+    geom_bar(stat = "identity",
+             position = position_dodge()) +
+    geom_errorbar(aes(ymin = idc_low,
+                      ymax = idc_up),
+                  width = .2,
+                  position = position_dodge(.9)) +
+    theme_minimal() +
+    ylim(0, 1) +
+    xlab("Dataset") +
+    ylab(get_metric_name(metric)) +
+    scale_x_discrete() +
+    scale_fill_brewer() -> p
+
+  ggsave(filename = paste0("native_", metric, ".png"), p,
+         device = png(),
+         dpi = 600,
+         height = 10, width = 15)
+}
 
 
 for (metric in metrics) {
@@ -56,7 +109,8 @@ for (metric in metrics) {
       ggtitle(paste0("Trainied on ", train)) +
       xlab("Tested on ") +
       ylab(get_metric_name(metric)) +
-      scale_x_discrete() +scale_fill_brewer()
+      scale_x_discrete() +
+      scale_fill_brewer()
   }
 
 
