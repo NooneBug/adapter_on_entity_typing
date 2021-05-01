@@ -17,22 +17,15 @@ def prepare_entity_typing_dataset_only_sentences_and_string_labels(path, model):
   load: if load == False a new dataset is created from path;
         if load == True a dataset is loaded from path (togheter with its label2id)
   '''
-
-  max_context_side_size = model.configuration("MaxContextSideSize")
-  max_entity_size       = model.configuration('MaxEntitySize')
-  
+  max_context_side_size = model.configuration("MaxContextSideSize", "train")
+  max_entity_size       = model.configuration("MaxEntitySize", "train")
   t = time.time()
-  with open(path, 'r') as inp:
+  with open(path, "r") as inp:
     lines = [json.loads(l) for l in inp.readlines()]
-
-  print('... lines red in {:.2f} seconds ...'.format(time.time() - t))
-
+  print("... lines red in {:.2f} seconds ...".format(time.time() - t))
   sentences = get_sentences(lines, max_context_side_size, max_entity_size)
-
   labels = get_labels(lines, only_labels = True)
-
   bd = BertDatasetWithStringLabels(sentences, labels, tokenized_sent = [], attn_masks = [])
-  
   return bd
 
 def save_dataset(dataset, label2id, path):
@@ -54,20 +47,20 @@ def prepare_entity_typing_dataset(model, train_dev_test: str = "train", label2id
                               "test":  "PathInputTest"}[train_dev_test])
   if path == "None":
     return None, label2id
-  max_context_side_size = model.configuration("MaxContextSideSize")
-  max_entity_size       = model.configuration('MaxEntitySize')
-  tokenized_dir         = model.configuration("DatasetTokenizedDir")
+  max_context_side_size = model.configuration("MaxContextSideSize", "train")
+  max_entity_size       = model.configuration("MaxEntitySize",      "train")
+  tokenized_dir         = model.configuration("TokenizedDir",       "data")
   dataset_name = model.configuration("DatasetName") + "." + train_dev_test
   
   t = time.time()
-  with open(path, 'r') as inp:
+  with open(path, "r") as inp:
     lines = [json.loads(l) for l in inp.readlines()]
 
-  print('... lines red in {:.2f} seconds ...'.format(time.time() - t))
+  print("... lines red in {:.2f} seconds ...".format(time.time() - t))
 
   if not only_label2id:
     sentences = get_sentences(lines, max_context_side_size, max_entity_size)
-  labels, label2id = get_labels(lines, label2id=label2id, test=train_dev_test == 'test')
+  labels, label2id = get_labels(lines, label2id=label2id, test=(train_dev_test == "test"))
 
   if tokenized_dir and not os.path.isdir(tokenized_dir):
     os.mkdir(tokenized_dir)
@@ -96,7 +89,7 @@ def prepare_entity_typing_dataset(model, train_dev_test: str = "train", label2id
       with open(dataset_file, "a") as dataset_file_tokenized:
         for tokenized_sent_i, attn_mask_i in zip(bd.tokenized_sent, bd.attn_masks):
           out_i = {"tokenized_sent": tokenized_sent_i,
-                  "attn_masks":     attn_mask_i}
+                   "attn_masks":     attn_mask_i}
           dataset_file_tokenized.write(json.dumps(out_i) + "\n")
     return bd, label2id
   else:
@@ -105,17 +98,13 @@ def prepare_entity_typing_dataset(model, train_dev_test: str = "train", label2id
 
 def prepare_entity_typing_datasets(model):
   train, label2id = prepare_entity_typing_dataset(model, "train", only_label2id=True)
-  dev,   label2id = prepare_entity_typing_dataset(model, "dev", label2id)
-  test,  label2id = prepare_entity_typing_dataset(model, "test", label2id)
+  dev,   label2id = prepare_entity_typing_dataset(model, "dev",   label2id)
+  test,  label2id = prepare_entity_typing_dataset(model, "test",  label2id)
   return train, dev, test, label2id
     
 
-def get_labels(lines, label2id = None, test = False, only_labels = False, ):
-  if test:
-    label_key = 'original_types'
-  else:
-    label_key = 'y_str'
-
+def get_labels(lines, label2id = None, test = False, only_labels = False):
+  label_key = "original_types" if test else "y_str"
   example_labels = [l[label_key] for l in lines]
   if only_labels:
     return example_labels

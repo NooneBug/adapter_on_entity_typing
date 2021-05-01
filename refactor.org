@@ -1,0 +1,66 @@
+* TODO Generale
+- [ ] pulsantone rosso di accensione (riproducibilità), possibilmente in python stesso
+- [ ] passare i nomi degli esperimenti come argomenti (di funzioni? di file?)
+- [X] modificare nomi (più chiari ed espliciti):
+  - =model_trained_on_data=
+  - =model_trained_on_data1_tested_on_data2=  (anche quando coincidono!)
+- [ ] calcolo della di media e varianza /trimmed/
+#+begin_src python
+def trimmed_stats(x, sampled = True):
+    x_sorted = np.sort(x)[1:-1]
+    return x_sorted.mean(), x_sorted.std(ddof = 1 if sampled else 0)
+#+end_src
+
+* TODO Configurazione
+- [-] dividere la configurazione in 3 file (=train.ini=, =test.ini=, =data.ini=)
+  - [X] creare i tre file
+  - [X] modificare costruzione del modello
+  - [X] modificare caricamento del modello
+  - [ ] modificare caricamento del modello non nativo
+  - [X] modificare caricamento del dataset
+
+* TODO Allenamento
+- [ ] verificare parametri allenamento su choi
+- [ ] modificare allenamento del modello
+  - [ ] costruire generatore per random-seed train
+#+begin_src python
+def get_random_seed():
+    i = 0
+    while True:
+        yield i if i else "le basi"
+        i += 1
+#+end_src
+  - [X] costruire generatore per nome modello
+    - [X] salvare le istanze trainate come parametro del modello
+#+begin_src python
+def get_pretraineds(model):
+    pretrained_name = model.train_configuration("PretrainedName")
+    in_folder = lambda x: os.path.join(model.train_configuration("ModelPath"),
+                                       x)
+    return [in_folder("{}-v{}.ckpt".format(pretrained_name, i) if i \
+                      else "{}.ckpt".format(pretrained_name))
+            for i in range(model.train_configuration("N"))]
+
+
+model.pretraineds = get_pretraineds(model)
+#+end_src
+- [ ] unire i due precedenti
+#+begin_src python
+for model_i, random_seed in zip(model.pretraineds, get_random_seed()):
+    if os.path.isfile(model_i):
+        print(model_i + " already trained")
+        continue
+    set_seed(random_seed)
+    # ...
+#+end_src
+
+* TODO Test & risultati
+- [ ] allenare modelli se non presenti
+#+begin_src python
+for model_i in model.pretraineds:
+    if not os.path.isfile(model_i):
+        train(model)
+    # ...
+#+end_src
+- [ ] modificare salvataggio distribuzione (header unico in =results/performances=)
+- [ ] automatizzare calcolo performance
