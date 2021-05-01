@@ -21,15 +21,15 @@ from adapter_entity_typing.network_classes.classifiers import adapterPLWrapper, 
 # the parameters file
 PARAMETERS = {"train": "train.ini",
               "test":  "test.ini",
-              "data":  "data.ini"}
+              "data":  "data.ini" }
 
 # the device to use 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() \
                       else "cpu")
 
 ADAPTER_CONFIGS = {
-            "Pfeiffer": PfeifferConfig,
-            "Houlsby" : HoulsbyConfig }
+    "Pfeiffer": PfeifferConfig,
+    "Houlsby" : HoulsbyConfig }
 
 MAPPINGS = {
     "BBN":       import_bbn_mappings,
@@ -39,7 +39,7 @@ MAPPINGS = {
 
 
 def get_pretraineds(train_configuration, pretrained_name):
-    folder = train_configuration["PathModel"]
+    folder = train_configuration["PathPretrainedModel"]
     n = train_configuration["n"]
     in_folder = lambda x: os.path.join(folder, x)
     return [in_folder("{}-v{}.ckpt".format(pretrained_name, i) if i \
@@ -50,7 +50,7 @@ def get_pretraineds(train_configuration, pretrained_name):
 
 def read_parameters(experiment: str,
                     train_or_test: str,
-                    configs: str = PARAMETERS):
+                    configs: dict = PARAMETERS):
     """Read the configuration for a given experiment.
     Example of use:
     ```
@@ -70,7 +70,7 @@ def read_parameters(experiment: str,
         train = config["train"][experiment]
         config["train"][experiment]["PathInputTrain"] = data["Train"]
         config["train"][experiment]["PathInputDev"]   = data["Dev"]
-        config["train"][experiment]["PathModel"] = os.path.join(
+        config["train"][experiment]["PathPretrainedModel"] = os.path.join(
             train["PathModel"],
             experiment)
         configuration = {"train": config["train"][experiment],
@@ -93,13 +93,16 @@ def read_parameters(experiment: str,
         #
         # train
         "PathModel":           str,     # path for storing the pretrained weights
+        "PathPretrainedModel": str,     # the (base) pretrained name
+        "LightningPath":       str,     # where to store tensorboard logs
         "PathInputTrain":      str,     # path of the train set
         "PathInputDev":        str,     # path of the dev set
-        "n":                   int,     # number of istances for the model
         # 
         "MaxEntitySize":       int,     # max number of words in the entity mention (the last words will be cutted)
         "MaxEpoch":            int,     # (maximum) number of training epoches
+        "n":                   int,     # number of istances for the model
         "Patience":            int,     # patience befor early stop
+        "ColdStart":           int,     # coldstart for early stopping
         "BatchSize":           int,     # batch size for both training and inference
         "LearningRate":        float,   # learning rate
         # 
@@ -129,7 +132,7 @@ def read_parameters(experiment: str,
     return get_parameter
 
 def get_model(experiment_name: str,
-              config_file: str = PARAMETERS,
+              config_file: dict = PARAMETERS,
               pretrained: str = "bert-base-uncased"):
     """Build the model with the configuration for a given experiment."""
     #

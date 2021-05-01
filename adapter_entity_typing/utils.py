@@ -228,4 +228,4 @@ def compute_metrics(pred_classes, true_classes):
     return avg_pred_number, void_prediction_counter, micro_p, micro_r, micro_f1, macro_p, macro_r, macro_f1
 
 def compute_f1(p, r):	
-        return (2*p*r)/(p + r) if (p + r) else 0
+  return (2*p*r)/(p + r) if (p + r) else 0

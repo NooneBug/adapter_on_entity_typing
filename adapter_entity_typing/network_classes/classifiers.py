@@ -33,13 +33,13 @@ class EarlyStoppingWithColdStart(EarlyStopping):
             self._run_early_stopping_check(trainer, pl_module)
 
 class adapterPLWrapper(pl.LightningModule):
-  def __init__(self, adapterClassifier, id2label, lr) -> None:
+  def __init__(self, adapterClassifier, id2label) -> None:
       super().__init__()
 
       self.classifier = adapterClassifier
       self.id2label = id2label
 
-      self.lr = lr
+      self.lr = model.configuration("LerningRate", "train")
       self.criterion = BCEWithLogitsLoss(pos_weight=torch.full((len(id2label),), 1.))
 
       self.sig = Sigmoid()
