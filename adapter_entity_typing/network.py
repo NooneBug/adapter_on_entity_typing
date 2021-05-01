@@ -31,6 +31,13 @@ ADAPTER_CONFIGS = {
             "Pfeiffer": PfeifferConfig,
             "Houlsby" : HoulsbyConfig }
 
+MAPPINGS = {
+    "BBN":       import_bbn_mappings,
+    "OntoNotes": import_ontonotes_mappings,
+    "FIGER":     import_figer_mappings,
+    "Choi":      import_choi_mappings }
+
+
 def get_pretraineds(train_configuration, pretrained_name):
     folder = train_configuration["PathModel"]
     n = train_configuration["n"]
@@ -66,7 +73,8 @@ def read_parameters(experiment: str,
         config["train"][experiment]["PathModel"] = os.path.join(
             train["PathModel"],
             experiment)
-        configuration = {"train": config["train"][experiment]}
+        configuration = {"train": config["train"][experiment],
+                         "data":  data}
     else:
         test  = config["test"][experiment]
         training_name = test["TrainingName"]
@@ -75,10 +83,6 @@ def read_parameters(experiment: str,
         config["test"][experiment]["Traineds"] = get_pretraineds(train, training_name)
         config["test"]["IsTrained?"] = all(
             [os.path.isfile(x) for x in test["Traineds"]])
-        config["test"]["Mapping"] = ("{}_to_{}".format(
-            train["DatasetName"], test["DatasetName"]) \
-                                     if train["DatasetName"] != test["DatasetName"] \
-                                     else "")
         configuration = {"train": config["train"][training_name],
                          "test":  config["test"][experiment],
                          "data":  data}
@@ -110,7 +114,6 @@ def read_parameters(experiment: str,
         "Traineds":            list,    # list of trained models
         "PathInputTest":       str,     # path of the test set
         "IsTrained?":          bool,    # all models are trained?
-        "Mapping":             str,     # the mapping (if any), void otherwhise
         #
         # data
         "Train":               str,     # path of the train set
@@ -168,74 +171,9 @@ def add_classifier(model, labels: dict = {}):
         id2label=labels)
 
 
-def load_model_with_nonnative_datasets(experiment_parameters: str, 
-                                        experiment_name: str,
-                                        config_file: str = PARAMETERS,
-                                        training_file: str = PARAMETERS,
-                                        pretrained: str = "bert-base-uncased"):
-
-    """Load the model for a given EXPERIMENT_NAME."""
-
-    # initialize a casual model
-    test_configuration = read_parameters(experiment_parameters, config_file)
-    classification_model = get_model(experiment_name, training_file, pretrained)
-    classification_model.test_configuration = test_configuration
-    pretrained_model = classification_model.configuration("PretrainedModel")
-    configuration = classification_model.configuration
-    if pretrained_model == "same":
-        pretrained_model = classification_model.configuration("ExperimentName")
-    pretrained_folder = os.path.dirname(classification_model.test_configuration("PathModel"))
-    
-    native_dataset_name = test_configuration("NativeDatasetName").lower()
-    if native_dataset_name == 'bbn':
-        mappings = import_bbn_mappings()
-    elif native_dataset_name == 'onto':
-        mappings = import_ontonotes_mappings()
-    elif native_dataset_name == 'figer':
-        mappings = import_figer_mappings()
-    elif native_dataset_name == 'choi':
-        mappings = import_choi_mappings()
-    else:
-        raise Exception('please provide a valid value for NativeDatasetName')
-    
-    nonnative_dataset_name = test_configuration("NonNativeDatasetName").lower()
-    if nonnative_dataset_name in ['bbn', 'figer', 'ontonotes', 'choi']:
-        mapping_dict = mappings[nonnative_dataset_name]
-    else:
-        raise Exception('please provide a valid value for NonNativeDatasetName')
-
-    nonnnative_dev = test_configuration("NonNativeDev")
-    nonnnative_test = test_configuration("NonNativeTest")
-
-    # read training & development data
-    train_dataset, dev_dataset, test_dataset, label2id = prepare_entity_typing_datasets(classification_model)
-
-    nonnative_dev_dataset = prepare_entity_typing_dataset_only_sentences_and_string_labels(nonnnative_dev, classification_model)
-    nonnative_test_dataset = prepare_entity_typing_dataset_only_sentences_and_string_labels(nonnnative_test, classification_model)
-
-    # add the classifier for the given data
-    add_classifier(classification_model, label2id)
-    
-    # load the .ckpt file with pre-trained weights (if exists)
-    print(pretrained_model)
-    ckpts = [os.path.join(pretrained_folder, x)
-             for x in os.listdir(pretrained_folder)
-             if x.startswith(pretrained_model)]
-    print(ckpts)
-    for ckpt in ckpts:
-        model = adapterPLWrapper.load_from_checkpoint(ckpt,
-                                                      adapterClassifier = classification_model,
-                                                      id2label = {v: k for k, v in label2id.items()},
-                                                      lr = classification_model.configuration("LearningRate"))
-    
-        model.to(DEVICE)
-        model.eval()
-        model.configuration = configuration
-        yield model, nonnative_dev_dataset, nonnative_test_dataset, label2id, mapping_dict
-
 
 def load_model(experiment_name: str,
-               config_file: str = PARAMETERS,
+               config_file: dict = PARAMETERS,
                pretrained: str = "bert-base-uncased"):
 
     """Load the model for a given EXPERIMENT_NAME."""
@@ -248,15 +186,29 @@ def load_model(experiment_name: str,
     # read training & development data
     train_dataset, dev_dataset, test_dataset, label2id = \
         prepare_entity_typing_datasets(classification_model)
+
     # add the classifier for the given data
     add_classifier(classification_model, label2id)
+
+    # load the mapper if not native
+    native_train    = model.configuration("DatasetName", "train")
+    non_native_test = model.configuration("DatasetName", "test")
+    non_native_dev  = native_train if model.configuration("DevOrTest") == "both" else non_native_teste
+    if native_data != non_native_data:
+        mapping = MAPPINGS[native_data]()[non_native_data]
+        # TODO chiarire
+        dev_dataset  = prepare_entity_typing_dataset_only_sentences_and_string_labels(non_native_dev , classification_model)
+        test_dataset = prepare_entity_typing_dataset_only_sentences_and_string_labels(non_native_test, classification_model)
+        
     # load the .ckpt file with pre-trained weights (if exists)
     for ckpt in configuration("Traineds"):
+        print("Loading {}".format(ckpt))
         model = adapterPLWrapper.load_from_checkpoint(ckpt,
                                                       adapterClassifier = classification_model,
                                                       id2label = {v: k for k, v in label2id.items()},
-                                                      lr = classification_model.configuration("LearningRate", "train"))    
+                                                      lr = classification_model.configuration("LearningRate", "train"))
+        model.configuration = configuration
+            
         model.to(DEVICE)
         model.eval()
-        model.configuration = configuration
         yield model, train_dataset, dev_dataset, test_dataset, label2id
