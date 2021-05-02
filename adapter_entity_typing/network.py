@@ -19,9 +19,9 @@ from adapter_entity_typing.network_classes.classifiers import adapterPLWrapper, 
 
 
 # the parameters file
-PARAMETERS = {"train": "train.ini",
-              "test":  "test.ini",
-              "data":  "data.ini" }
+PARAMETERS = {"train": ("train.ini", True),
+              "test":  ("test.ini",  True),
+              "data":  ("data.ini",  True)}
 
 # the device to use 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() \
@@ -50,7 +50,8 @@ def get_pretraineds(train_configuration, pretrained_name):
 
 def read_parameters(experiment: str,
                     train_or_test: str,
-                    configs: dict = PARAMETERS):
+                    configs: dict = PARAMETERS,
+                    true_name: str = ""):
     """Read the configuration for a given experiment.
     Example of use:
     ```
@@ -62,8 +63,13 @@ def read_parameters(experiment: str,
     config = {k: configparser.ConfigParser()
               for k in configs.keys()}
     for k, v in configs.items():
-        config[k].read(v)
-    config[train_or_test][experiment]["ExperimentName"] = experiment
+        if v[1]:
+            config[k].read(v[0])
+        else:
+            config[k].read_string(v[0])
+    #
+    config[train_or_test][experiment]["ExperimentName"] = true_name if true_name \
+        else experiment
     dataset_name = config[train_or_test][experiment]["DatasetName"]
     training_name = experiment if train_or_test == "train" \
         else config["test"][experiment]["TrainingName"]
@@ -75,7 +81,7 @@ def read_parameters(experiment: str,
         train["PathModel"],
         experiment)
     configuration = {"data":  config["data"][dataset_name],
-                     "train": config["train"][train_name]}
+                     "train": train}
     if train_or_test == "test":
         test = config["test"][experiment]
         test["PathInputTrain"] = config["data"][test["DatasetName"]]["Train"]
@@ -173,25 +179,38 @@ def add_classifier(model, labels: dict = {}):
         id2label=labels)
 
 
-
 def load_model(experiment_name: str,
                config_file: dict = PARAMETERS,
                pretrained: str = "bert-base-uncased"):
 
     """Load the model for a given EXPERIMENT_NAME."""
-
-    # initialize a casual model
     configuration = read_parameters(experiment_name, "test", config_file)
-    classification_model = get_model(configuration("TrainingName"),
-                                     config_file,
+    config = configparser.ConfigParser()
+    config.read(config_file["test"][0])
+    config_str = "[{}]\n".format(configuration("TrainingName"))
+    for k, v in dict(config[experiment_name]).items():
+        config_str += "{} = {}\n".format(k, v)
+    new_config_file = {
+        "train": config_file["train"],
+        "test":  (config_str, False),
+        "data":  config_file["data"]}
+    new_configuration = read_parameters(configuration("TrainingName"),
+                                        "test",
+                                        new_config_file,
+                                        experiment_name)
+    #
+    # initialize a casual model
+    classification_model = get_model(new_configuration("TrainingName"),
+                                     new_config_file,
                                      pretrained)
+    #
     # read training & development data
     train_dataset, dev_dataset, test_dataset, label2id = \
         prepare_entity_typing_datasets(classification_model)
-
+    #
     # add the classifier for the given data
     add_classifier(classification_model, label2id)
-
+    #
     # load the mapper if not native
     native_train    = configuration("DatasetName", "train")
     non_native_test = configuration("DatasetName", "test")
@@ -201,21 +220,15 @@ def load_model(experiment_name: str,
         # TODO chiarire
         dev_dataset  = prepare_entity_typing_dataset_only_sentences_and_string_labels(non_native_dev , classification_model)
         test_dataset = prepare_entity_typing_dataset_only_sentences_and_string_labels(non_native_test, classification_model)
-        
+    #
     # load the .ckpt file with pre-trained weights (if exists)
     for ckpt in configuration("Traineds"):
         print("Loading {}".format(ckpt))
-        checkpoint = torch.load(checkpoint_path, map_location=lambda storage, loc: storage)
-        for k, v in checkpoint["state_dict"].items():
-            k_new = k.replace(experiment_name, configuration("TrainingName"))
-            if k != k_new:
-                checkpoint["state_dict"][k_new] = v
-        model.load_state_dict(checkpoint["state_dict"])
-        # classification_model = adapterPLWrapper.load_from_checkpoint(ckpt,
-        #                                                              adapterClassifier = classification_model,
-        #                                                              id2label = {v: k for k, v in label2id.items()})
-        classification_model.configuration = configuration
-            
-        classification_model.to(DEVICE)
-        classification_model.eval()
-        yield classification_model, train_dataset, dev_dataset, test_dataset, label2id
+        model = adapterPLWrapper.load_from_checkpoint(
+            ckpt,
+            adapterClassifier = classification_model,
+            id2label = {v: k for k, v in label2id.items()})
+        model.configuration = new_configuration
+        model.to(DEVICE)
+        model.eval()
+        yield model, train_dataset, dev_dataset, test_dataset, label2id
