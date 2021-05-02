@@ -80,6 +80,8 @@ def read_parameters(experiment: str,
         training_name = test["TrainingName"]
         train = config["train"][training_name]
         config["test"][experiment]["PathInputTest"] = data["Test"]
+        if test["DevOrTest"] == "both":
+            config["test"][experiment]["PathInputDev"] = data["Dev"]
         config["test"][experiment]["Traineds"] = get_pretraineds(train, training_name)
         config["test"]["IsTrained?"] = all(
             [os.path.isfile(x) for x in test["Traineds"]])
@@ -114,6 +116,7 @@ def read_parameters(experiment: str,
         #
         # test
         "TrainingName":        str,     # name of the pretrained weights
+        "DevOrTest":           str,     # where to test model (both or test)
         "Traineds":            list,    # list of trained models
         "PathInputTest":       str,     # path of the test set
         "IsTrained?":          bool,    # all models are trained?
@@ -122,7 +125,7 @@ def read_parameters(experiment: str,
         "Train":               str,     # path of the train set
         "Dev":                 str,     # path of the dev set
         "Test":                str,     # path of the test set
-        "TokenizedDir":        str,     # folder to save tokenized cache
+        "TokenizedDir":        str      # folder to save tokenized cache
         }
     #
     def get_parameter(p: str, train_or_test_get: str = train_or_test):
@@ -194,9 +197,9 @@ def load_model(experiment_name: str,
     add_classifier(classification_model, label2id)
 
     # load the mapper if not native
-    native_train    = model.configuration("DatasetName", "train")
-    non_native_test = model.configuration("DatasetName", "test")
-    non_native_dev  = native_train if model.configuration("DevOrTest") == "both" else non_native_teste
+    native_train    = configuration("DatasetName", "train")
+    non_native_test = configuration("DatasetName", "test")
+    non_native_dev  = native_train if configuration("DevOrTest") == "both" else non_native_test
     if native_train != non_native_test:
         mapping = MAPPINGS[native_trai]()[non_native_test]
         # TODO chiarire

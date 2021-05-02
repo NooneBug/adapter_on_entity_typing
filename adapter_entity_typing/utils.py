@@ -42,9 +42,9 @@ def prepare_entity_typing_dataset(model, train_dev_test: str = "train", label2id
         if load == True a dataset is loaded from path (togheter with its label2id)
   '''
   assert train_dev_test in ["train", "dev", "test"]
-  path = model.configuration({"train": "PathInputTrain",
-                              "dev":   "PathInputDev",
-                              "test":  "PathInputTest"}[train_dev_test])
+  path = model.configuration(*{"train": ("PathInputTrain", "train"),
+                               "dev":   ("PathInputDev",   "train"),
+                               "test":  ("PathInputTest",  "test")}[train_dev_test])
   if path == "None":
     return None, label2id
   max_context_side_size = model.configuration("MaxContextSideSize", "train")
