@@ -39,8 +39,8 @@ MAPPINGS = {
 
 
 def get_pretraineds(train_configuration, pretrained_name):
-    folder = train_configuration["PathPretrainedModel"]
-    n = train_configuration["n"]
+    folder = train_configuration["PathModel"]
+    n = int(train_configuration["n"])
     in_folder = lambda x: os.path.join(folder, x)
     return [in_folder("{}-v{}.ckpt".format(pretrained_name, i) if i \
                       else "{}.ckpt".format(pretrained_name))
@@ -70,6 +70,7 @@ def read_parameters(experiment: str,
     train = config["train"][training_name]
     train["PathInputTrain"] = config["data"][train["DatasetName"]]["Train"]
     train["PathInputDev"]   = config["data"][train["DatasetName"]]["Dev"]
+    train["PathInputTest"]  = config["data"][train["DatasetName"]]["Test"]
     train["PathPretrainedModel"] = os.path.join(
         train["PathModel"],
         experiment)
@@ -77,11 +78,11 @@ def read_parameters(experiment: str,
                      "train": config["train"][train_name]}
     if train_or_test == "test":
         test = config["test"][experiment]
-        if test["DevOrTest"] == "both":
-            test["PathInputDev"] = config["data"][test["DatasetName"]]["Dev"]
-        test["PathInputTest"]    = config["data"][test["DatasetName"]]["Test"]
-        test["Traineds"] = get_pretraineds(train, training_name)
-        test["IsTrained?"] = all([os.path.isfile(x) for x in test["Traineds"]])
+        test["PathInputTrain"] = config["data"][test["DatasetName"]]["Train"]
+        test["PathInputDev"]   = config["data"][test["DatasetName"]]["Dev"]
+        test["PathInputTest"]  = config["data"][test["DatasetName"]]["Test"]
+        test["Traineds"] = repr(get_pretraineds(train, training_name))
+        test["IsTrained?"] = repr(all([os.path.isfile(x) for x in test["Traineds"]]))
         configuration["test"] = test
     parameter_type = {
         # global
@@ -112,9 +113,9 @@ def read_parameters(experiment: str,
         # test
         "TrainingName":        str,     # name of the pretrained weights
         "DevOrTest":           str,     # where to test model (both or test)
-        "Traineds":            list,    # list of trained models
+        "Traineds":            eval,    # list of trained models
         "PathInputTest":       str,     # path of the test set
-        "IsTrained?":          bool,    # all models are trained?
+        "IsTrained?":          eval,    # all models are trained?
         #
         # data
         "Train":               str,     # path of the train set
@@ -204,12 +205,17 @@ def load_model(experiment_name: str,
     # load the .ckpt file with pre-trained weights (if exists)
     for ckpt in configuration("Traineds"):
         print("Loading {}".format(ckpt))
-        model = adapterPLWrapper.load_from_checkpoint(ckpt,
-                                                      adapterClassifier = classification_model,
-                                                      id2label = {v: k for k, v in label2id.items()},
-                                                      lr = classification_model.configuration("LearningRate", "train"))
-        model.configuration = configuration
+        checkpoint = torch.load(checkpoint_path, map_location=lambda storage, loc: storage)
+        for k, v in checkpoint["state_dict"].items():
+            k_new = k.replace(experiment_name, configuration("TrainingName"))
+            if k != k_new:
+                checkpoint["state_dict"][k_new] = v
+        model.load_state_dict(checkpoint["state_dict"])
+        # classification_model = adapterPLWrapper.load_from_checkpoint(ckpt,
+        #                                                              adapterClassifier = classification_model,
+        #                                                              id2label = {v: k for k, v in label2id.items()})
+        classification_model.configuration = configuration
             
-        model.to(DEVICE)
-        model.eval()
-        yield model, train_dataset, dev_dataset, test_dataset, label2id
+        classification_model.to(DEVICE)
+        classification_model.eval()
+        yield classification_model, train_dataset, dev_dataset, test_dataset, label2id
