@@ -101,7 +101,7 @@ def train(experiment):
 
         # start training :D
         id2label = {v: k for k,v in label2id.items()}
-        pl_wrapper = adapterPLWrapper(model, id2label, model.configuration('LearningRate'))
+        pl_wrapper = adapterPLWrapper(model, id2label)
         
         trainer = declare_callbacks_and_trainer(model)
         trainer.fit(pl_wrapper, train_loader, dev_loader)

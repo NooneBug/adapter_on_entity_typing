@@ -44,7 +44,6 @@ def test(experiment):
         "p":  {"dev": [], "test": []},
         "r":  {"dev": [], "test": []},
         "f1": {"dev": [], "test": []}}
-
     for model, _, dev_dataset, test_dataset, label2id in load_model(experiment):
         id2label = {v: k for k,v in label2id.items()}
         data_to_pred = [get_loader(test_dataset)]
@@ -52,6 +51,7 @@ def test(experiment):
             data_to_pred.append(get_loader(dev_dataset))
 
         for d, loader in zip(["test", "dev"], data_to_pred):
+            # if not header
             all_preds = []
             all_preds_and_logits = []
             all_labels = []
@@ -179,7 +179,8 @@ def test(experiment):
 
 
             
-            with open(dataset_paths[dataset_id], 'r') as inp:
+            with open({"dev":  model.configuration("PathInputDev"),
+                       "test": model.configuration("PathInputTest")}[d], "r") as inp:
                 lines = [json.loads(l) for l in inp.readlines()]
             
             label_sentences = defaultdict(list)

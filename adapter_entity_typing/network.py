@@ -65,29 +65,24 @@ def read_parameters(experiment: str,
         config[k].read(v)
     config[train_or_test][experiment]["ExperimentName"] = experiment
     dataset_name = config[train_or_test][experiment]["DatasetName"]
-    data = config["data"][dataset_name]
-    if train_or_test == "train":
-        train = config["train"][experiment]
-        config["train"][experiment]["PathInputTrain"] = data["Train"]
-        config["train"][experiment]["PathInputDev"]   = data["Dev"]
-        config["train"][experiment]["PathPretrainedModel"] = os.path.join(
-            train["PathModel"],
-            experiment)
-        configuration = {"train": config["train"][experiment],
-                         "data":  data}
-    else:
-        test  = config["test"][experiment]
-        training_name = test["TrainingName"]
-        train = config["train"][training_name]
-        config["test"][experiment]["PathInputTest"] = data["Test"]
+    training_name = experiment if train_or_test == "train" \
+        else config["test"][experiment]["TrainingName"]
+    train = config["train"][training_name]
+    train["PathInputTrain"] = config["data"][train["DatasetName"]]["Train"]
+    train["PathInputDev"]   = config["data"][train["DatasetName"]]["Dev"]
+    train["PathPretrainedModel"] = os.path.join(
+        train["PathModel"],
+        experiment)
+    configuration = {"data":  config["data"][dataset_name],
+                     "train": config["train"][train_name]}
+    if train_or_test == "test":
+        test = config["test"][experiment]
         if test["DevOrTest"] == "both":
-            config["test"][experiment]["PathInputDev"] = data["Dev"]
-        config["test"][experiment]["Traineds"] = get_pretraineds(train, training_name)
-        config["test"]["IsTrained?"] = all(
-            [os.path.isfile(x) for x in test["Traineds"]])
-        configuration = {"train": config["train"][training_name],
-                         "test":  config["test"][experiment],
-                         "data":  data}
+            test["PathInputDev"] = config["data"][test["DatasetName"]]["Dev"]
+        test["PathInputTest"]    = config["data"][test["DatasetName"]]["Test"]
+        test["Traineds"] = get_pretraineds(train, training_name)
+        test["IsTrained?"] = all([os.path.isfile(x) for x in test["Traineds"]])
+        configuration["test"] = test
     parameter_type = {
         # global
         "ExperimentName":      str,     # name of the experiment

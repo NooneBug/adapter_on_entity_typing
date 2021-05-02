@@ -39,7 +39,7 @@ class adapterPLWrapper(pl.LightningModule):
       self.classifier = adapterClassifier
       self.id2label = id2label
 
-      self.lr = model.configuration("LerningRate", "train")
+      self.lr = self.classifier.configuration("LearningRate", "train")
       self.criterion = BCEWithLogitsLoss(pos_weight=torch.full((len(id2label),), 1.))
 
       self.sig = Sigmoid()
