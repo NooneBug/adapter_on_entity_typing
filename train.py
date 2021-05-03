@@ -65,7 +65,7 @@ def get_pretrained_name(base_name, i):
 def get_random_seed():
     i = 0
     while True:
-        yield i if i else "le basi"  # TODO mettere valore vero
+        yield i if i else 236451  # https://www.wikidata.org/wiki/Q75179705
         i += 1
 
 

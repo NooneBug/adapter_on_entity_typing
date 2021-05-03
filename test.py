@@ -30,7 +30,27 @@ def compute_f1(p, r):
     return 2 * (p * r) / (p + r) if p + r else 0
 
 
+def filter_label(original_label, mapping_dict):
+    return [original_label] if original_label in mapping_dict else []
+
+
+def take_first_k_filtered(predictions, mapping_dict, id2label, k):
+    k_predicted_values = []
+    k_predicted_idxs = []
+    for predicted_value, value_id in zip(*torch.topk(predictions, k = len(predictions))):
+        translation = filter_label(id2label[value_id.item()], mapping_dict)
+        if translation:
+            k_predicted_values.append(predicted_value.item())
+            k_predicted_idxs.append(value_id.item())
+        if len(k_predicted_values) >= k:
+            break
+    return k_predicted_values, k_predicted_idxs
+
+
 def test(experiment):
+    # TODO: inizializzare performance_file
+    # TODO: inizializzare prediction_file
+    # TODO: inizializzare average_std_file
     get_loader = lambda x: DataLoader(x, batch_size = BATCH_SIZE, num_workers = WORKERS)
     micros = {
         "p":  {"dev": [], "test": []},
@@ -44,20 +64,23 @@ def test(experiment):
         "p":  {"dev": [], "test": []},
         "r":  {"dev": [], "test": []},
         "f1": {"dev": [], "test": []}}
-    for model, _, dev_dataset, test_dataset, label2id in load_model(experiment):
+    for model, _, dev_dataset, test_dataset, label2id, mapping in load_model(experiment):
         id2label = {v: k for k,v in label2id.items()}
         data_to_pred = [get_loader(test_dataset)]
         if model.configuration("DevOrTest") == "both":
             data_to_pred.append(get_loader(dev_dataset))
 
         for d, loader in zip(["test", "dev"], data_to_pred):
-            # if not header
             all_preds = []
             all_preds_and_logits = []
             all_labels = []
             top_k_labels = []
-
+            batch_start_index = 0
+            
             for mention, attn, labels in loader:
+                if mapping:
+                    labels = loader.dataset.labels[batch_start_index: batch_start_index + BATCH_SIZE]
+                    batch_start_index += BATCH_SIZE
                 mention = mention.to(DEVICE)
                 attn    = attn.to(DEVICE)
                 preds   = preds.to(DEVICE)
@@ -73,15 +96,27 @@ def test(experiment):
                     preds_ids = mask.nonzero()
                     no_pred = True
                     for p in pred_ids:
-                        ex_preds.append(id2label[p.item()])
-                        ex_preds_and_logits.append((id2label[p.item()],
-                                                    round(preds[i][p].item(), 3)))
+                        if mappings:
+                            filtered_label = filter_label(id2label[p.item()], mapping)
+                            ex_preds.extend(filtered_label)
+                            if filtered_label:
+                                ex_preds_and_logits.append((filtered_label, 
+                                                            round(pred[p].item(), 3)))
+                        else:
+                            ex_preds.append(id2label[p.item()])
+                            ex_preds_and_logits.append((id2label[p.item()],
+                                                        round(preds[i][p].item(), 3)))
                         no_preds = False
-                    topk_values, topk_indexes = torch.topk(pred, k = 5)
+                    topk_values, topk_indexes = torch.topk(pred, k = 5) if not mappings \
+                        else take_first_k_filtered(pred, 
+                                                   mapping, 
+                                                   id2label, 
+                                                   k = 5)
                     top_k_l = []
                     for val, index in zip(topk_values, topk_indexes):
                         val = round(val.item(), 3)
-                        lab = id2label[index.item()]
+                        lab = id2label[index.item()] if not mapping \
+                            else filter_label(id2label[index], mapping)
                         top_k_l.append((lab, val))
 
                     if no_pred:
@@ -199,7 +234,51 @@ def test(experiment):
             bar.close()
 
             ordered_labels = list(sorted(label2id.keys()))
+            with open(prediction_file + '_' + d + '.txt', 'a') as out:
+                out.write('{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n'.format('label_#', 'precision', 
+                                                                        'recall', 'f1', 'sentence', 'mention', 
+                                                                        'preds_and_logits', 'top_k_labels_and_logits', 'true_labels'))
+                for label in ordered_labels:
+                    for i, sentence, mention, preds_and_logits, top_k, true_label in enumerate(label_sentences[label], 1):
+                        out_string = '{}\t{:.4f}\t{:.4f}\t{:.4f}\t{}\t{}\t{}\t{}\t{}\n'.format(label + '_' + str(i),
+                                                                                               precisions[label],
+                                                                                               recalls[label],
+                                                                                               f1s[label],
+                                                                                               sentence,
+                                                                                               mention,
+                                                                                               preds_and_logits,
+                                                                                               top_k,
+                                                                                               true_label)
+                        out.write(out_string)
+            with open(performance_file + '_' + d + '.txt', 'a') as out:
+                out.write('{:.4f}\t{:.4f}\t{:.4f}\t{:.4f}\t{:.4f}\t{:.4f}\t{:.4f}\t{:.4f}\t{:.4f}\n'.format(macro_example_p,
+                                                                                                            macro_example_r,
+                                                                                                            macro_example_f1,
+                                                                                                            macro_p,
+                                                                                                            macro_r,
+                                                                                                            macro_f1,
+                                                                                                            micro_p,
+                                                                                                            micro_r,
+                                                                                                            micro_f1))
+    name = {
+        "p": "precision",
+        "r": "recall",
+        "f1": "f1"
+    }
+    for d in keys:
+        results = {}
+        for result_name, result in zip(["micro", "macro", "example"],
+                                       [ micros,  macros, macro_examples]):
+            print(result_name)
+            print(result)
+            print()
+            for k, v in result.items():
+                v = np.array(v[d])
+                mu, sd = trimmed_stats(v)
+                results["{}_{}".format(result_name, k)] = (mu, sd)
 
-            # TODO: scrivere log delle risultati
-        # TODO: scrivere file con indici
-    # TODO: scrivere statistiche
+        with open(average_std_file + '_'+ d + '.txt', 'a') as out:
+            out.write("model,mu,sd\n")
+            for k, (m, s) in results.items():
+                out.write('{},{:.4f},{:.4f}\n'.format(k, m, s))
+            out.write('\n')

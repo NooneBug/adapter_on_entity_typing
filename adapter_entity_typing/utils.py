@@ -60,7 +60,9 @@ def prepare_entity_typing_dataset(model, train_dev_test: str = "train", label2id
 
   if not only_label2id:
     sentences = get_sentences(lines, max_context_side_size, max_entity_size)
-  labels, label2id = get_labels(lines, label2id=label2id, test=(train_dev_test == "test"))
+  # TODO: riguardare
+  labels, label2id = get_labels(lines, label2id=label2id,
+                                native=(model.configuration("DatasetName", "train") != model.configuration("DatasetName", "train")))
 
   if tokenized_dir and not os.path.isdir(tokenized_dir):
     os.mkdir(tokenized_dir)
@@ -103,8 +105,8 @@ def prepare_entity_typing_datasets(model):
   return train, dev, test, label2id
     
 
-def get_labels(lines, label2id = None, test = False, only_labels = False):
-  label_key = "y_str" # "original_types" if test else "y_str"    # TODO: chiedere
+def get_labels(lines, label2id = None, native = True, only_labels = False):
+  label_key = "y_str" if native else "original_types"
   example_labels = [l[label_key] for l in lines]
   if only_labels:
     return example_labels

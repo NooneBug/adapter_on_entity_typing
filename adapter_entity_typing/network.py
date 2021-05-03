@@ -256,9 +256,9 @@ def load_model(experiment_name: str,
     non_native_test = configuration("DatasetName", "test")
     non_native_dev  = native_train if configuration("DevOrTest") == "both" \
         else non_native_test
+    mapping = None
     if native_train != non_native_test:
-        mapping = MAPPINGS[native_trai]()[non_native_test]
-        # TODO chiarire
+        mapping = MAPPINGS[native_train]()[non_native_test]
         dev_dataset  = prepare_entity_typing_dataset_only_sentences_and_string_labels(non_native_dev , classification_model)
         test_dataset = prepare_entity_typing_dataset_only_sentences_and_string_labels(non_native_test, classification_model)
     #
@@ -272,4 +272,4 @@ def load_model(experiment_name: str,
         model.configuration = new_configuration
         model.to(DEVICE)
         model.eval()
-        yield model, train_dataset, dev_dataset, test_dataset, label2id
+        yield model, train_dataset, dev_dataset, test_dataset, label2id, mapping
