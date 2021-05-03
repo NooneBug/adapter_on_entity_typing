@@ -98,10 +98,22 @@ def prepare_entity_typing_dataset(model, train_dev_test: str = "train", label2id
     return None, label2id
 
 
-def prepare_entity_typing_datasets(model):
-  train, label2id = prepare_entity_typing_dataset(model, "train", only_label2id=True)
-  dev,   label2id = prepare_entity_typing_dataset(model, "dev",   label2id)
-  test,  label2id = prepare_entity_typing_dataset(model, "test",  label2id)
+def prepare_entity_typing_datasets(model, train=True, dev=True, test=True):
+  label2id_file = os.path.join(model.configuration("TokenizedDir", "data"),
+                               model.configuration("DatasetName") + "_label2id.json")
+  if os.path.isfile(label2id_file):
+    with open(label2id_file, "r") as label2id_stream:
+      label2id = json.loads(label2id_stream.read())
+    train = prepare_entity_typing_dataset(model, "train", label2id)[0] if train else None
+    dev   = prepare_entity_typing_dataset(model, "dev",   label2id)[0] if train else None
+    test  = prepare_entity_typing_dataset(model, "test" , label2id)[0] if train else None
+    return train, dev, test, label2id
+  else:
+    train, label2id = prepare_entity_typing_dataset(model, "train", only_label2id=True)
+    dev,   label2id = prepare_entity_typing_dataset(model, "dev",   label2id)
+    test,  label2id = prepare_entity_typing_dataset(model, "test",  label2id)
+    with open(label2id_file, "w") as label2id_stream:
+      label2id_stream.write(json.dumps(label2id))
   return train, dev, test, label2id
     
 

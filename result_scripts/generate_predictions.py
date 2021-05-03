@@ -21,25 +21,7 @@ config = config[parameter_tags[0]]
 
 sig = torch.nn.Sigmoid()
 
-# model_path = config['ModelRootPath'] + config['ModelName']
-# classifier = get_model(model_path)
 
-# max_context_side_size = classifier.configuration('MaxContextSideSize')
-# max_entity_size = classifier.configuration('MaxEntitySize')
-
-# train_dataset, dev_dataset, test_dataset, label2id = prepare_entity_typing_datasets(classifier)
-
-
-# vocab_len = len(id2label)
-
-# add_classifier(model = classifier, labels = label2id)
-
-# model = adapterPLWrapper.load_from_checkpoint(model_path, 
-#                                                 adapterClassifier = classifier, 
-#                                                 id2label = id2label, 
-#                                                 lr = 1e-4)
-# model.cuda()
-# model.eval()
 
 micros = {
     "p": [],

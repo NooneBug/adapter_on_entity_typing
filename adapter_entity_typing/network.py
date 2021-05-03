@@ -69,6 +69,13 @@ def read_parameters(experiment: str,
         else:
             config[k].read_string(v[0])
     #
+    def make_dir(x):
+        path = os.path.normpath(x).split(os.sep)
+        complete_path = [os.path.join(*path[0:i]) for i in range(1, len(path))]
+        for p in complete_path:
+            if not os.path.isdir(p):
+                os.mkdir(p)
+    #
     config[train_or_test][experiment]["ExperimentName"] = true_name if true_name \
         else experiment
     dataset_name = config[train_or_test][experiment]["DatasetName"]
@@ -81,6 +88,8 @@ def read_parameters(experiment: str,
     train["PathPretrainedModel"] = os.path.join(
         train["PathModel"],
         experiment)
+    make_dir(train["PathModel"])
+    make_dir(config["data"][train["DatasetName"]]["TokenizedDir"])
     configuration = {"data":  config["data"][dataset_name],
                      "train": train}
     if train_or_test == "test":
@@ -90,6 +99,10 @@ def read_parameters(experiment: str,
         test["PathInputTest"]  = config["data"][test["DatasetName"]]["Test"]
         test["Traineds"] = repr(get_pretraineds(train, training_name))
         test["IsTrained?"] = repr(all([os.path.isfile(x) for x in test["Traineds"]]))
+        make_dir(test["PerformanceFile"])
+        make_dir(test["PredictionFile"])
+        make_dir(test["AvgStdFile"])
+        make_dir(config["data"][test["DatasetName"]]["TokenizedDir"])
         configuration["test"] = test
     parameter_type = {
         # global
@@ -123,6 +136,9 @@ def read_parameters(experiment: str,
         "Traineds":            eval,    # list of trained models
         "PathInputTest":       str,     # path of the test set
         "IsTrained?":          eval,    # all models are trained?
+        "PredictionFile":      str,     # where to store y_hat
+        "PerformanceFile":     str,     # where to store raw performance
+        "AvgStdFile":          str,     # where to store (trimmed) mean and standard deviation of metrics
         #
         # data
         "Train":               str,     # path of the train set
@@ -245,21 +261,26 @@ def load_model(experiment_name: str,
     classification_model = get_model(training_name, new_config_file, pretrained)
     #
     # read training & development data
-    train_dataset, dev_dataset, test_dataset, label2id = \
-        prepare_entity_typing_datasets(classification_model)
+    native = configuration("DatasetName", "train") == configuration("DatasetName", "test").split("_filtered_with_")[0] 
+    dev_dataset, test_dataset, label2id = \
+        prepare_entity_typing_datasets(classification_model,
+                                       train = False,
+                                       dev = configuration("DevOrTest") == "both" and native,
+                                       test = native)
     #
     # add the classifier for the given data
     add_classifier(classification_model, label2id)
     #
     # load the mapper if not native
-    native_train    = configuration("DatasetName", "train")
-    non_native_test = configuration("DatasetName", "test")
-    non_native_dev  = native_train if configuration("DevOrTest") == "both" \
-        else non_native_test
     mapping = None
-    if native_train != non_native_test:
+    if not native:
+        native_train    = configuration("DatasetName", "train")
+        non_native_test = configuration("DatasetName", "test")
+        non_native_dev  = native_train if configuration("DevOrTest") == "both" \
+            else non_native_test
         mapping = MAPPINGS[native_train]()[non_native_test]
-        dev_dataset  = prepare_entity_typing_dataset_only_sentences_and_string_labels(non_native_dev , classification_model)
+        if configuration("DevOrTest") == "both":
+            dev_dataset  = prepare_entity_typing_dataset_only_sentences_and_string_labels(non_native_dev , classification_model)
         test_dataset = prepare_entity_typing_dataset_only_sentences_and_string_labels(non_native_test, classification_model)
     #
     # load the .ckpt file with pre-trained weights (if exists)
@@ -272,4 +293,4 @@ def load_model(experiment_name: str,
         model.configuration = new_configuration
         model.to(DEVICE)
         model.eval()
-        yield model, train_dataset, dev_dataset, test_dataset, label2id, mapping
+        yield model, dev_dataset, test_dataset, label2id, mapping

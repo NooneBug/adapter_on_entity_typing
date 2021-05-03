@@ -48,9 +48,6 @@ def take_first_k_filtered(predictions, mapping_dict, id2label, k):
 
 
 def test(experiment):
-    # TODO: inizializzare performance_file
-    # TODO: inizializzare prediction_file
-    # TODO: inizializzare average_std_file
     get_loader = lambda x: DataLoader(x, batch_size = BATCH_SIZE, num_workers = WORKERS)
     micros = {
         "p":  {"dev": [], "test": []},
@@ -64,7 +61,16 @@ def test(experiment):
         "p":  {"dev": [], "test": []},
         "r":  {"dev": [], "test": []},
         "f1": {"dev": [], "test": []}}
-    for model, _, dev_dataset, test_dataset, label2id, mapping in load_model(experiment):
+    for model, dev_dataset, test_dataset, label2id, mapping in load_model(experiment):
+        performance_file = os.path.join(
+            model.configuration("PerformanceFile"),
+            model.configuration("ExperimentName"))
+        prediction_file = os.path.join(
+            model.configuration("PredictionFile"),
+            model.configuration("ExperimentName"))
+        average_std_file = os.path.join(
+            model.configuration("AvgStdFile"),
+            model.configuration("ExperimentName"))
         id2label = {v: k for k,v in label2id.items()}
         data_to_pred = [get_loader(test_dataset)]
         if model.configuration("DevOrTest") == "both":
@@ -282,3 +288,9 @@ def test(experiment):
             for k, (m, s) in results.items():
                 out.write('{},{:.4f},{:.4f}\n'.format(k, m, s))
             out.write('\n')
+
+
+
+if __name__ == "__main__":
+    import sys
+    test(sys.argv[1])
