@@ -13,15 +13,16 @@ from transformers.adapter_config import PfeifferConfig, HoulsbyConfig
 from result_scripts.import_mappings import import_bbn_mappings, import_choi_mappings, import_figer_mappings, import_ontonotes_mappings
 
 import os
-
+import regex as re
 from adapter_entity_typing.utils import prepare_entity_typing_datasets, prepare_entity_typing_dataset_only_sentences_and_string_labels
 from adapter_entity_typing.network_classes.classifiers import adapterPLWrapper, EarlyStoppingWithColdStart
 
 
 # the parameters file
-PARAMETERS = {"train": ("train.ini", True),
-              "test":  ("test.ini",  True),
-              "data":  ("data.ini",  True)}
+PARAMETERS = {
+    "train": ("train.ini", True),
+    "test":  ("test.ini",  True),
+    "data":  ("data.ini",  True) }
 
 # the device to use 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() \
@@ -136,6 +137,34 @@ def read_parameters(experiment: str,
     #
     return get_parameter
 
+
+def manipulate_config(config_file: str,
+                      section: str,
+                      new_name: str = "",
+                      **others):
+    """Manipulate a parameter file as you want"""
+    config = configparser.ConfigParser()
+    config.read(config_name)
+    config_dict = dict(config[section])
+    config_dict.update(others)
+    out = ["[{}]".format(new_name if new_name else section)] + \
+        ["{} = {}".format(k, v) in config_dict.items()]
+    return ("\n".join(out), False)
+
+
+def test_to_train_name(experiment_name):
+    experiment_name = re.sub("FeatureExtraction", "_ft_0", experiment_name)
+    experiment_name = re.sub(r"bertFT(\d+)",   r"bert_ft_\1", experiment_name)
+    experiment_name = re.sub(r"adapters(\d+)", r"adapter_\1", experiment_name)
+    experiment_name = re.sub("FIGER",     "figer", experiment_name)
+    experiment_name = re.sub("Choi",      "choi",  experiment_name)
+    experiment_name = re.sub("BBN",       "bbn",   experiment_name)
+    experiment_name = re.sub("OntoNotes", "onto",  experiment_name)
+    experiment_name = re.sub("trained_on_", "", experiment_name)
+    experiment_name = re.sub(r"tested_on_.+$", "", experiment_name)
+    return re.match(r"(?:adapter_\d+|bert_ft_\d+)_[^_]+", experiment_name).group(0)
+
+
 def get_model(experiment_name: str,
               config_file: dict = PARAMETERS,
               pretrained: str = "bert-base-uncased"):
@@ -144,18 +173,23 @@ def get_model(experiment_name: str,
     # https://docs.adapterhub.ml/classes/adapter_config.html#transformers.AdapterConfig
     # https://docs.adapterhub.ml/classes/model_mixins.html?highlight=add_adapter#transformers.ModelAdaptersMixin.add_adapter
     #
+    new_experiment_name = test_to_train_name(experiment_name)
+    config_file["train"] = manipulate_config(config_file["train"][0],
+                                             experiment_name,
+                                             new_experiment_name)
     model = BertModelWithHeads.from_pretrained(pretrained)
-    model.experiment_name = experiment_name
-    model.configuration = read_parameters(model.experiment_name,
+    model.experiment_name = new_experiment_name
+    model.configuration = read_parameters(new_experiment_name,
                                           "train",
-                                          config_file)
+                                          config_file,
+                                          experiment_name)
     
     if model.configuration("ReductionFactor"):
         adapter_config = ADAPTER_CONFIGS[model.configuration("AdapterConfig")](
             reduction_factor = model.configuration("ReductionFactor"))
     
-        model.add_adapter(experiment_name, AdapterType.text_task, adapter_config)
-        model.train_adapter(experiment_name)
+        model.add_adapter(new_experiment_name, AdapterType.text_task, adapter_config)
+        model.train_adapter(new_experiment_name)
     elif model.configuration("BertFineTuning"):
         # generate a partial string which will match with each parameter in the i-esim transformer
         layer_to_freeze = ["layer.{}.".format(i) \
@@ -185,24 +219,26 @@ def load_model(experiment_name: str,
 
     """Load the model for a given EXPERIMENT_NAME."""
     configuration = read_parameters(experiment_name, "test", config_file)
-    config = configparser.ConfigParser()
-    config.read(config_file["test"][0])
-    config_str = "[{}]\n".format(configuration("TrainingName"))
-    for k, v in dict(config[experiment_name]).items():
-        config_str += "{} = {}\n".format(k, v)
+    training_name = test_to_train_name(configuration("TrainingName")) 
+    config_test_str  = manipulate_config(config_file["test"][0],
+                                         experiment_name,
+                                         training_name,
+                                         TrainingName = training_name)
+    config_train_str = manipulate_config(config_file["train"][0],
+                                         configuration("TrainingName"),
+                                         training_name)
+    #
     new_config_file = {
-        "train": config_file["train"],
-        "test":  (config_str, False),
+        "train": config_train_str,
+        "test":  config_test_str,
         "data":  config_file["data"]}
-    new_configuration = read_parameters(configuration("TrainingName"),
+    new_configuration = read_parameters(training_name,
                                         "test",
                                         new_config_file,
                                         experiment_name)
     #
     # initialize a casual model
-    classification_model = get_model(new_configuration("TrainingName"),
-                                     new_config_file,
-                                     pretrained)
+    classification_model = get_model(training_name, new_config_file, pretrained)
     #
     # read training & development data
     train_dataset, dev_dataset, test_dataset, label2id = \
@@ -214,7 +250,8 @@ def load_model(experiment_name: str,
     # load the mapper if not native
     native_train    = configuration("DatasetName", "train")
     non_native_test = configuration("DatasetName", "test")
-    non_native_dev  = native_train if configuration("DevOrTest") == "both" else non_native_test
+    non_native_dev  = native_train if configuration("DevOrTest") == "both" \
+        else non_native_test
     if native_train != non_native_test:
         mapping = MAPPINGS[native_trai]()[non_native_test]
         # TODO chiarire
