@@ -104,7 +104,7 @@ def prepare_entity_typing_datasets(model):
     
 
 def get_labels(lines, label2id = None, test = False, only_labels = False):
-  label_key = "original_types" if test else "y_str"
+  label_key = "y_str" # "original_types" if test else "y_str"    # TODO: chiedere
   example_labels = [l[label_key] for l in lines]
   if only_labels:
     return example_labels

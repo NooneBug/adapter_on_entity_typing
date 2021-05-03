@@ -138,7 +138,7 @@ def read_parameters(experiment: str,
     return get_parameter
 
 
-def manipulate_config(config_file: str,
+def manipulate_config(config_name: str,
                       section: str,
                       new_name: str = "",
                       **others):
@@ -148,7 +148,7 @@ def manipulate_config(config_file: str,
     config_dict = dict(config[section])
     config_dict.update(others)
     out = ["[{}]".format(new_name if new_name else section)] + \
-        ["{} = {}".format(k, v) in config_dict.items()]
+        ["{} = {}".format(k, v) for k, v in config_dict.items()]
     return ("\n".join(out), False)
 
 
@@ -174,9 +174,10 @@ def get_model(experiment_name: str,
     # https://docs.adapterhub.ml/classes/model_mixins.html?highlight=add_adapter#transformers.ModelAdaptersMixin.add_adapter
     #
     new_experiment_name = test_to_train_name(experiment_name)
-    config_file["train"] = manipulate_config(config_file["train"][0],
-                                             experiment_name,
-                                             new_experiment_name)
+    if experiment_name != new_experiment_name:
+        config_file["train"] = manipulate_config(config_file["train"][0],
+                                                 experiment_name,
+                                                 new_experiment_name)
     model = BertModelWithHeads.from_pretrained(pretrained)
     model.experiment_name = new_experiment_name
     model.configuration = read_parameters(new_experiment_name,
@@ -213,6 +214,9 @@ def add_classifier(model, labels: dict = {}):
         id2label=labels)
 
 
+# experiment_name = "bert_ft_0_trained_on_figer_tested_on_figer"
+# config_file = PARAMETERS
+# pretrained = "bert-base-uncased"
 def load_model(experiment_name: str,
                config_file: dict = PARAMETERS,
                pretrained: str = "bert-base-uncased"):
@@ -223,7 +227,7 @@ def load_model(experiment_name: str,
     config_test_str  = manipulate_config(config_file["test"][0],
                                          experiment_name,
                                          training_name,
-                                         TrainingName = training_name)
+                                         trainingname = training_name)
     config_train_str = manipulate_config(config_file["train"][0],
                                          configuration("TrainingName"),
                                          training_name)
