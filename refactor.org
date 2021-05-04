@@ -1,22 +1,22 @@
-* TODO Generale
-- [ ] pulsantone rosso di accensione (riproducibilità), possibilmente in python stesso
-- [ ] passare i nomi degli esperimenti come argomenti (di funzioni? di file?)
+* DONE Generale
+- [X] pulsantone rosso di accensione (riproducibilità), possibilmente in python stesso
+- [X] passare i nomi degli esperimenti come argomenti (di funzioni? di file?)
 - [X] modificare nomi (più chiari ed espliciti):
   - =model_trained_on_data=
   - =model_trained_on_data1_tested_on_data2=  (anche quando coincidono!)
-- [ ] calcolo della di media e varianza /trimmed/
+- [X] calcolo della di media e varianza /trimmed/
 #+begin_src python
 def trimmed_stats(x, sampled = True):
     x_sorted = np.sort(x)[1:-1]
     return x_sorted.mean(), x_sorted.std(ddof = 1 if sampled else 0)
 #+end_src
 
-* TODO Configurazione
-- [-] dividere la configurazione in 3 file (=train.ini=, =test.ini=, =data.ini=)
+* DONE Configurazione
+- [X] dividere la configurazione in 3 file (=train.ini=, =test.ini=, =data.ini=)
   - [X] creare i tre file
   - [X] modificare costruzione del modello
   - [X] modificare caricamento del modello
-  - [ ] modificare caricamento del modello non nativo
+  - [X] modificare caricamento del modello non nativo
   - [X] modificare caricamento del dataset
 
 * TODO Allenamento
@@ -54,14 +54,14 @@ for model_i, random_seed in zip(model.pretraineds, get_random_seed()):
     # ...
 #+end_src
 
-* TODO Test & risultati
-- [ ] allenare modelli se non presenti
+* DONE Test & risultati
+- [X] allenare modelli se non presenti
 #+begin_src python
 for model_i in model.pretraineds:
     if not os.path.isfile(model_i):
         train(model)
     # ...
 #+end_src
-- [ ] verificare /mappings/
-- [ ] modificare salvataggio distribuzione (header unico in =results/performances=)
-- [ ] automatizzare calcolo performance
+- [X] verificare /mappings/
+- [X] modificare salvataggio distribuzione (header unico in =results/performances=)
+- [X] automatizzare calcolo performance
