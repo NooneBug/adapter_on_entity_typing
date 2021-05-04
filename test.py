@@ -8,6 +8,7 @@ import torch
 import json
 import numpy as np
 from tqdm import tqdm
+import os
 
 import sys
 
@@ -101,19 +102,20 @@ def test(experiment):
                     ex_preds_and_logits = []
                     preds_ids = mask.nonzero()
                     no_pred = True
-                    for p in pred_ids:
-                        if mappings:
+                    for p in preds_ids:
+                        if mapping:
                             filtered_label = filter_label(id2label[p.item()], mapping)
                             ex_preds.extend(filtered_label)
                             if filtered_label:
                                 ex_preds_and_logits.append((filtered_label, 
                                                             round(pred[p].item(), 3)))
+                            no_pred = False
                         else:
                             ex_preds.append(id2label[p.item()])
                             ex_preds_and_logits.append((id2label[p.item()],
                                                         round(preds[i][p].item(), 3)))
-                        no_preds = False
-                    topk_values, topk_indexes = torch.topk(pred, k = 5) if not mappings \
+                            no_pred = False
+                    topk_values, topk_indexes = torch.topk(pred, k = 5) if not mapping \
                         else take_first_k_filtered(pred, 
                                                    mapping, 
                                                    id2label, 
@@ -201,6 +203,10 @@ def test(experiment):
             macro_examples["p"][d].append(macro_example_p)
             macro_examples["r"][d].append(macro_example_r)
             macro_examples["f1"][d].append(macro_example_f1)
+
+            micro_true_counter = 0
+            micro_pred_counter = 0
+            micro_correct_counter = 0
 
             bar = tqdm(desc="computing micro performances", total=len(all_preds))       
             for labels, preds in zip(all_labels, all_preds):

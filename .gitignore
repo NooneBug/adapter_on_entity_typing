@@ -8,6 +8,5 @@ lightning_logs/
 trained_models/
 entity_context_optimizations_lightning_logs/
 datasets_tokenized/
-results/avgs_stds/*
-results/performances/*
-results/predictions/*
+results/*
+dataset_filtering.py
