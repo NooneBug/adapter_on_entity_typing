@@ -59,7 +59,7 @@ def declare_callbacks_and_trainer(model):
 
 
 def get_pretrained_name(base_name, i):
-    return "{}-v{}.ckpt".format(base_name, i - 1) if i > 1 else "{}.ckpt"
+    return "{}-v{}.ckpt".format(base_name, i) if i else "{}.ckpt".format(base_name)
 
   
 def get_random_seed():
@@ -84,7 +84,7 @@ def train(experiment):
         model = get_model(experiment)
         
         # if already trained
-        if os.path.isfile(get_pretrained_name(model.configuration("PathModel"), i)):
+        if os.path.isfile(get_pretrained_name(model.configuration("PathPretrainedModel"), i)):
             print("Skipping")
             continue
 
