@@ -40,7 +40,7 @@ class BertDatasetWithStringLabels(Dataset):
             self.attn_masks.append(tok['attention_mask'][i])
         
     def __getitem__(self, idx):
-        return np.asarray(self.tokenized_sent[idx]), np.asarray(self.attn_masks[idx]), None
+        return np.asarray(self.tokenized_sent[idx]), np.asarray(self.attn_masks[idx]), np.zeros(len(self.tokenized_sent[idx]))
 
     def __len__(self):
         return len(self.tokenized_sent)

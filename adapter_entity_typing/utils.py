@@ -9,7 +9,7 @@ from transformers import AutoTokenizer
 
 
 
-def prepare_entity_typing_dataset_only_sentences_and_string_labels(path, model):
+def prepare_entity_typing_dataset_only_sentences_and_string_labels(model, train_dev_test: str = "train", label2id = None):
   '''
   path: the dataset path (.json)
   label2id: if load == False and path is a (.json) is used to not generate a new dictionary 
@@ -17,14 +17,27 @@ def prepare_entity_typing_dataset_only_sentences_and_string_labels(path, model):
   load: if load == False a new dataset is created from path;
         if load == True a dataset is loaded from path (togheter with its label2id)
   '''
+  assert train_dev_test in ["train", "dev", "test"]
+  path = model.configuration(*{"train": ("PathInputTrain", "train"),
+                               "dev":   ("PathInputDev",   "test"),
+                               "test":  ("PathInputTest",  "test")}[train_dev_test])
+  if path == "None":
+    return None, label2id
   max_context_side_size = model.configuration("MaxContextSideSize", "train")
-  max_entity_size       = model.configuration("MaxEntitySize", "train")
+  max_entity_size       = model.configuration("MaxEntitySize",      "train")
   t = time.time()
+
   with open(path, "r") as inp:
     lines = [json.loads(l) for l in inp.readlines()]
   print("... lines red in {:.2f} seconds ...".format(time.time() - t))
+
   sentences = get_sentences(lines, max_context_side_size, max_entity_size)
-  labels = get_labels(lines, only_labels = True)
+
+  # native = True
+  # if train_dev_test == "test" and model.configuration("DatasetName", "train") != model.configuration("DatasetName", "test").split("_filtered_with_")[0]:
+  #   native = False
+
+  labels = get_labels(lines, only_labels = True, label2id=label2id, test = train_dev_test == 'test', label_key='original_types_only_mapped')
   bd = BertDatasetWithStringLabels(sentences, labels, tokenized_sent = [], attn_masks = [])
   return bd
 
@@ -61,8 +74,15 @@ def prepare_entity_typing_dataset(model, train_dev_test: str = "train", label2id
   if not only_label2id:
     sentences = get_sentences(lines, max_context_side_size, max_entity_size)
   # TODO: riguardare
-  labels, label2id = get_labels(lines, label2id=label2id,
-                                native=(model.configuration("DatasetName", "train") != model.configuration("DatasetName", "train")))
+
+  # native = True
+  # if train_dev_test == "test" and model.configuration("DatasetName", "train") != model.configuration("DatasetName", "test").split("_filtered_with_")[0]:
+    # native = False
+
+  labels, label2id = get_labels(lines, label2id=label2id, test = train_dev_test == 'test')
+  
+  # labels, label2id = get_labels(lines, label2id=label2id,
+  #                               native=(model.configuration("DatasetName", "train") != model.configuration("DatasetName", "train")))
 
   if tokenized_dir and not os.path.isdir(tokenized_dir):
     os.mkdir(tokenized_dir)
@@ -105,8 +125,8 @@ def prepare_entity_typing_datasets(model, train=True, dev=True, test=True):
     with open(label2id_file, "r") as label2id_stream:
       label2id = json.loads(label2id_stream.read())
     train = prepare_entity_typing_dataset(model, "train", label2id)[0] if train else None
-    dev   = prepare_entity_typing_dataset(model, "dev",   label2id)[0] if train else None
-    test  = prepare_entity_typing_dataset(model, "test" , label2id)[0] if train else None
+    dev   = prepare_entity_typing_dataset(model, "dev",   label2id)[0] if dev else None
+    test  = prepare_entity_typing_dataset(model, "test" , label2id)[0] if test else None
     return train, dev, test, label2id
   else:
     train, label2id = prepare_entity_typing_dataset(model, "train", only_label2id=True)
@@ -117,8 +137,8 @@ def prepare_entity_typing_datasets(model, train=True, dev=True, test=True):
   return train, dev, test, label2id
     
 
-def get_labels(lines, label2id = None, native = True, only_labels = False):
-  label_key = "y_str" if native else "original_types"
+def get_labels(lines, label2id = None, only_labels = False, test = False, label_key = 'y_str'):
+  # label_key = "y_str" if native else "original_types_only_mapped"
   example_labels = [l[label_key] for l in lines]
   if only_labels:
     return example_labels

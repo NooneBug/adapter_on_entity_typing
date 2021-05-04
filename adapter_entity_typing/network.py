@@ -225,7 +225,7 @@ def add_classifier(model, labels: dict = {}):
     model.add_classification_head(
         model.experiment_name,
         num_labels=len(labels),
-        layers=model.configuration("ClassificatorLayers"),
+        layers=model.configuration("ClassificatorLayers", 'train'),
         multilabel = True,
         id2label=labels)
 
@@ -259,10 +259,11 @@ def load_model(experiment_name: str,
     #
     # initialize a casual model
     classification_model = get_model(training_name, new_config_file, pretrained)
+    classification_model.configuration = new_configuration
     #
     # read training & development data
     native = configuration("DatasetName", "train") == configuration("DatasetName", "test").split("_filtered_with_")[0] 
-    dev_dataset, test_dataset, label2id = \
+    _, dev_dataset, test_dataset, label2id = \
         prepare_entity_typing_datasets(classification_model,
                                        train = False,
                                        dev = configuration("DevOrTest") == "both" and native,
@@ -276,12 +277,19 @@ def load_model(experiment_name: str,
     if not native:
         native_train    = configuration("DatasetName", "train")
         non_native_test = configuration("DatasetName", "test")
-        non_native_dev  = native_train if configuration("DevOrTest") == "both" \
-            else non_native_test
-        mapping = MAPPINGS[native_train]()[non_native_test]
-        if configuration("DevOrTest") == "both":
-            dev_dataset  = prepare_entity_typing_dataset_only_sentences_and_string_labels(non_native_dev , classification_model)
-        test_dataset = prepare_entity_typing_dataset_only_sentences_and_string_labels(non_native_test, classification_model)
+        # non_native_dev  = native_train if configuration("DevOrTest") == "both" \
+            # else non_native_test
+        mapping = MAPPINGS[native_train]()[non_native_test.split('_')[0]]
+        # _, dev_dataset, test_dataset, label2id  = prepare_entity_typing_dataset_only_sentences_and_string_labels( classification_model,
+                                                                                            # train = False,
+                                                                                            # dev = configuration("DevOrTest") == "both",
+                                                                                            # test = True)
+        if configuration('DevOrTest') == 'both':
+          dev_dataset  = prepare_entity_typing_dataset_only_sentences_and_string_labels(model = classification_model,
+                                                                                        train_dev_test = 'dev')
+
+        test_dataset = prepare_entity_typing_dataset_only_sentences_and_string_labels(model = classification_model,
+                                                                                      train_dev_test = 'test')
     #
     # load the .ckpt file with pre-trained weights (if exists)
     for ckpt in configuration("Traineds"):

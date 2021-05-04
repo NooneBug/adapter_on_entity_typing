@@ -21,7 +21,7 @@ models = ["bert_ft_0", "bert_ft_2", "adapter_2", "adapter_16"]
 models_name = {"bert_ft_0": "bertFeatureExtraction",
                "bert_ft_2": "bertFT2",
                "adapter_2": "adapters2",
-               "adapter_16": "adapter16"}
+               "adapter_16": "adapters16"}
 
 
 with open("test.ini", "w") as test_file:

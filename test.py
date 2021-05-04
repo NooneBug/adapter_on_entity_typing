@@ -32,7 +32,7 @@ def compute_f1(p, r):
 
 
 def filter_label(original_label, mapping_dict):
-    return [original_label] if original_label in mapping_dict else []
+    return mapping_dict[original_label]
 
 
 def take_first_k_filtered(predictions, mapping_dict, id2label, k):
@@ -41,8 +41,8 @@ def take_first_k_filtered(predictions, mapping_dict, id2label, k):
     for predicted_value, value_id in zip(*torch.topk(predictions, k = len(predictions))):
         translation = filter_label(id2label[value_id.item()], mapping_dict)
         if translation:
-            k_predicted_values.append(predicted_value.item())
-            k_predicted_idxs.append(value_id.item())
+            k_predicted_values.append(predicted_value)
+            k_predicted_idxs.append(value_id)
         if len(k_predicted_values) >= k:
             break
     return k_predicted_values, k_predicted_idxs
@@ -62,6 +62,7 @@ def test(experiment):
         "p":  {"dev": [], "test": []},
         "r":  {"dev": [], "test": []},
         "f1": {"dev": [], "test": []}}
+    
     for model, dev_dataset, test_dataset, label2id, mapping in load_model(experiment):
         performance_file = os.path.join(
             model.configuration("PerformanceFile"),
@@ -73,6 +74,7 @@ def test(experiment):
             model.configuration("AvgStdFile"),
             model.configuration("ExperimentName"))
         id2label = {v: k for k,v in label2id.items()}
+        
         data_to_pred = [get_loader(test_dataset)]
         if model.configuration("DevOrTest") == "both":
             data_to_pred.append(get_loader(dev_dataset))
@@ -90,6 +92,8 @@ def test(experiment):
                     batch_start_index += BATCH_SIZE
                 mention = mention.to(DEVICE)
                 attn    = attn.to(DEVICE)
+                preds = sig(model(mention, attn))
+            
                 preds   = preds.to(DEVICE)
 
                 batch_preds = []
@@ -124,12 +128,13 @@ def test(experiment):
                     for val, index in zip(topk_values, topk_indexes):
                         val = round(val.item(), 3)
                         lab = id2label[index.item()] if not mapping \
-                            else filter_label(id2label[index], mapping)
-                        top_k_l.append((lab, val))
+                            else filter_label(id2label[index.item()], mapping)
+                        if lab:
+                          top_k_l.append((lab, val))
 
                     if no_pred:
-                        ex_preds.append(top_k_l[0][0])
-                        ex_preds_and_logits.append(top_k_l[0])
+                        ex_preds.append(top_k_l[0][0] if type(top_k_l[0][0]) == str else top_k_l[0][0][0])
+                        ex_preds_and_logits.append(top_k_l[0] if type(top_k_l[0][0]) == str else (top_k_l[0][0][0], top_k_l[0][1]))
                     sorted_ex_preds_and_logits = sorted(ex_preds_and_logits,
                                                         key=lambda x: x[1],
                                                         reverse=True)
@@ -141,14 +146,17 @@ def test(experiment):
                 all_preds_and_logits.extend(batch_preds_and_logits)
                 top_k_labels.extend(batch_top_k_labels)
 
-                mask = labels == 1
-                batch_labels = []
-                for m in mask:
-                    ex_labels = []
-                    labels_ids = m.nonzero()
-                    for l in labels_ids:
-                        ex_labels.append(id2label[l.item()])
-                    batch_labels.append(ex_labels)
+                if mapping:
+                  batch_labels = labels
+                else:
+                  mask = labels == 1
+                  batch_labels = []
+                  for m in mask:
+                      ex_labels = []
+                      labels_ids = m.nonzero()
+                      for l in labels_ids:
+                          ex_labels.append(id2label[l.item()])
+                      batch_labels.append(ex_labels)
                 all_labels.extend(batch_labels)
 
             correct_count = defaultdict(int)
@@ -166,14 +174,18 @@ def test(experiment):
                 bar.update(1)
             bar.close()
 
+            if mapping:
+              label_names = [l0 for l in label2id.keys() for l0 in filter_label(l, mapping_dict = mapping)]
+            else:
+              label_names = label2id.keys() 
             precisions = {k: correct_count[k] / predict_count[k]
                           if predict_count[k] else 0
-                          for k in label2id.keys()}
+                          for k in label_names}
             recalls = {k: correct_count[k] / actual_count[k]
                        if actual_count[k] else 0
-                       for k in label2id.keys()}
+                       for k in label_names}
             f1s = {k: compute_f1(precisions[k], recalls[k])
-                   for k in label2id.keys()}
+                   for k in label_names}
             
             macro_p = np.mean(list(precisions.values()))
             macro_r = np.mean(list(recalls.values()))
@@ -191,7 +203,7 @@ def test(experiment):
             bar = tqdm(desc="computing macro examples performances", total=len(all_preds))
             for labels, preds in zip(all_labels, all_preds):
                 correct_preds = len(set(labels).intersection(set(preds)))
-                ma_e_precisions.append(correct_preds / len(preds))
+                ma_e_precisions.append((correct_preds / len(preds)) if len(preds) else 0)
                 ma_e_recalls.append(correct_preds / len(labels))
                 bar.update(1)
             bar.close()
@@ -245,13 +257,13 @@ def test(experiment):
                 bar.update(1)
             bar.close()
 
-            ordered_labels = list(sorted(label2id.keys()))
+            ordered_labels = list(sorted(label_names))
             with open(prediction_file + '_' + d + '.txt', 'a') as out:
                 out.write('{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n'.format('label_#', 'precision', 
                                                                         'recall', 'f1', 'sentence', 'mention', 
                                                                         'preds_and_logits', 'top_k_labels_and_logits', 'true_labels'))
                 for label in ordered_labels:
-                    for i, sentence, mention, preds_and_logits, top_k, true_label in enumerate(label_sentences[label], 1):
+                    for i, (sentence, mention, preds_and_logits, top_k, true_label) in enumerate(label_sentences[label], 1):
                         out_string = '{}\t{:.4f}\t{:.4f}\t{:.4f}\t{}\t{}\t{}\t{}\t{}\n'.format(label + '_' + str(i),
                                                                                                precisions[label],
                                                                                                recalls[label],
@@ -272,11 +284,11 @@ def test(experiment):
                                                                                                             micro_p,
                                                                                                             micro_r,
                                                                                                             micro_f1))
-    name = {
-        "p": "precision",
-        "r": "recall",
-        "f1": "f1"
-    }
+
+    keys = ['test']
+    if micros['f1']['dev']:
+      keys = ['test', 'dev']
+
     for d in keys:
         results = {}
         for result_name, result in zip(["micro", "macro", "example"],
