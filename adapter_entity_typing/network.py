@@ -118,7 +118,7 @@ def read_parameters(experiment: str,
         "PathInputDev":        str,     # path of the dev set
         # 
         "MaxEntitySize":       int,     # max number of words in the entity mention (the last words will be cutted)
-        "MaxEpoch":            int,     # (maximum) number of training epoches
+        "MaxEpochs":           int,     # (maximum) number of training epoches
         "n":                   int,     # number of istances for the model
         "Patience":            int,     # patience befor early stop
         "ColdStart":           int,     # coldstart for early stopping
@@ -165,7 +165,6 @@ def manipulate_config(config_name: str,
     try:
         config_dict = dict(config[section])
     except KeyError:
-        print(dict(config))
         config_dict = dict(config[new_name])
     config_dict.update(others)
     out = ["[{}]".format(new_name if new_name else section)] + \
@@ -200,7 +199,6 @@ def get_model(experiment_name: str,
         config_file["train"] = manipulate_config(config_file["train"][0],
                                                  experiment_name,
                                                  new_experiment_name)
-        print(config_file)
     model = BertModelWithHeads.from_pretrained(pretrained)
     model.experiment_name = new_experiment_name
     model.configuration = read_parameters(new_experiment_name,
