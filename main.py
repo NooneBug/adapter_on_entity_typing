@@ -28,11 +28,10 @@ if __name__ == "__main__":
         # experiments_per_dataset["FIGER"] + \
         # experiments_per_dataset["OntoNotes"] + \
         
-        configuration = adapter_entity_typing.network.read_parameters(
-                                                                      experiment,
+        configuration = adapter_entity_typing.network.read_parameters(experiment,
                                                                       "test",
-                                                                      parameters
-                                                                      )
+                                                                      parameters)
+
         if not configuration("IsTrained?"):
             train(configuration("TrainingName"))
         test(experiment)
