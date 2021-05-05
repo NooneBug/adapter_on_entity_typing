@@ -1,7 +1,7 @@
 from torch.nn.modules.loss import BCELoss
 from torch.utils.data.dataloader import DataLoader
 from adapter_entity_typing.utils import prepare_entity_typing_dataset
-from adapter_entity_typing.network import get_model, add_classifier
+from adapter_entity_typing.network import get_model, add_classifier, PARAMETERS
 from torch.utils.data import DataLoader
 from torch.optim import Adam
 import torch
@@ -84,7 +84,9 @@ def train(experiment):
         model = get_model(experiment)
         
         # if already trained
-        if os.path.isfile(get_pretrained_name(model.configuration("PathPretrainedModel"), i)):
+        pretrained_name = model.configuration("Traineds", "train")[i - 1]
+        print("Saving on " + pretrained_name)
+        if os.path.isfile(pretrained_name):
             print("Skipping")
             continue
 

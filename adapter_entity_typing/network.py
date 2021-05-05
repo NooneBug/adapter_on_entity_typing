@@ -51,7 +51,7 @@ def get_pretraineds(train_configuration, pretrained_name):
 
 def read_parameters(experiment: str,
                     train_or_test: str,
-                    configs: dict = PARAMETERS,
+                    configs: dict = PARAMETERS.copy(),
                     true_name: str = ""):
     """Read the configuration for a given experiment.
     Example of use:
@@ -85,6 +85,7 @@ def read_parameters(experiment: str,
     train["PathInputTrain"] = config["data"][train["DatasetName"]]["Train"]
     train["PathInputDev"]   = config["data"][train["DatasetName"]]["Dev"]
     train["PathInputTest"]  = config["data"][train["DatasetName"]]["Test"]
+    train["Traineds"] = repr(get_pretraineds(train, true_name or training_name))
     train["PathPretrainedModel"] = os.path.join(
         train["PathModel"],
         experiment)
@@ -161,7 +162,11 @@ def manipulate_config(config_name: str,
     """Manipulate a parameter file as you want"""
     config = configparser.ConfigParser()
     config.read(config_name)
-    config_dict = dict(config[section])
+    try:
+        config_dict = dict(config[section])
+    except KeyError:
+        print(dict(config))
+        config_dict = dict(config[new_name])
     config_dict.update(others)
     out = ["[{}]".format(new_name if new_name else section)] + \
         ["{} = {}".format(k, v) for k, v in config_dict.items()]
@@ -189,11 +194,13 @@ def get_model(experiment_name: str,
     # https://docs.adapterhub.ml/classes/adapter_config.html#transformers.AdapterConfig
     # https://docs.adapterhub.ml/classes/model_mixins.html?highlight=add_adapter#transformers.ModelAdaptersMixin.add_adapter
     #
+    config_file = config_file.copy()
     new_experiment_name = test_to_train_name(experiment_name)
     if experiment_name != new_experiment_name:
         config_file["train"] = manipulate_config(config_file["train"][0],
                                                  experiment_name,
                                                  new_experiment_name)
+        print(config_file)
     model = BertModelWithHeads.from_pretrained(pretrained)
     model.experiment_name = new_experiment_name
     model.configuration = read_parameters(new_experiment_name,
@@ -238,6 +245,7 @@ def load_model(experiment_name: str,
                pretrained: str = "bert-base-uncased"):
 
     """Load the model for a given EXPERIMENT_NAME."""
+    config_file = config_file.copy()
     configuration = read_parameters(experiment_name, "test", config_file)
     training_name = test_to_train_name(configuration("TrainingName")) 
     config_test_str  = manipulate_config(config_file["test"][0],
