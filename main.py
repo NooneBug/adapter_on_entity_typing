@@ -24,13 +24,15 @@ if __name__ == "__main__":
         
     for experiment in \
         experiments_per_dataset["BBN"] + \
-        experiments_per_dataset["FIGER"] + \
-        experiments_per_dataset["OntoNotes"] + \
         experiments_per_dataset["Choi"]:
+        # experiments_per_dataset["FIGER"] + \
+        # experiments_per_dataset["OntoNotes"] + \
         
-        configuration = adapter_entity_typing.network.read_parameters(parameters,
+        configuration = adapter_entity_typing.network.read_parameters(
+                                                                      experiment,
                                                                       "test",
-                                                                      experiment)
+                                                                      parameters
+                                                                      )
         if not configuration("IsTrained?"):
             train(configuration("TrainingName"))
         test(experiment)

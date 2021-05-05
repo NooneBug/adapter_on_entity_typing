@@ -67,7 +67,7 @@ def prepare_entity_typing_dataset(model, train_dev_test: str = "train", label2id
   
   t = time.time()
   with open(path, "r") as inp:
-    lines = [json.loads(l) for l in inp.readlines()]
+    lines = [json.loads(l) for l in tqdm(inp.readlines(), desc = 'reading lines...')]
 
   print("... lines red in {:.2f} seconds ...".format(time.time() - t))
 
@@ -88,21 +88,21 @@ def prepare_entity_typing_dataset(model, train_dev_test: str = "train", label2id
     os.mkdir(tokenized_dir)
   dataset_file = os.path.join(tokenized_dir, dataset_name)
 
-  if dataset_name:
+  if dataset_name and not only_label2id:
     tokenized_sent = []
     attn_masks = []
-    if os.path.isfile(dataset_file) and not only_label2id:
-      print("... reading from cache ...")
-      with open(dataset_file, "r") as dataset_file_tokenized:
-        for line in tqdm(dataset_file_tokenized.readlines()):
-          line_json = json.loads(line)
-          tokenized_sent.append(line_json["tokenized_sent"])
-          attn_masks.append(line_json["attn_masks"])
-      bd = BertDataset(sentences, labels, label_number = len(label2id),
-                       tokenized_sent=tokenized_sent, attn_masks=attn_masks)
-      return bd, label2id
-    elif only_label2id:
-      return None, label2id
+    # if os.path.isfile(dataset_file) and not only_label2id:
+    #   print("... reading from cache ...")
+    #   with open(dataset_file, "r") as dataset_file_tokenized:
+    #     for line in tqdm(dataset_file_tokenized.readlines()):
+    #       line_json = json.loads(line)
+    #       tokenized_sent.append(line_json["tokenized_sent"])
+    #       attn_masks.append(line_json["attn_masks"])
+    bd = BertDataset(sentences, labels, label_number = len(label2id),
+                      tokenized_sent=tokenized_sent, attn_masks=attn_masks)
+    return bd, label2id
+  elif only_label2id:
+    return None, label2id
   
   if not only_label2id:
     bd = BertDataset(sentences, labels, label_number = len(label2id), 
@@ -118,22 +118,22 @@ def prepare_entity_typing_dataset(model, train_dev_test: str = "train", label2id
     return None, label2id
 
 
-def prepare_entity_typing_datasets(model, train=True, dev=True, test=True):
+def prepare_entity_typing_datasets(model, train=True, dev=True, test=True, tokenize = False):
   label2id_file = os.path.join(model.configuration("TokenizedDir", "data"),
                                model.configuration("DatasetName") + "_label2id.json")
-  if os.path.isfile(label2id_file):
-    with open(label2id_file, "r") as label2id_stream:
-      label2id = json.loads(label2id_stream.read())
-    train = prepare_entity_typing_dataset(model, "train", label2id)[0] if train else None
-    dev   = prepare_entity_typing_dataset(model, "dev",   label2id)[0] if dev else None
-    test  = prepare_entity_typing_dataset(model, "test" , label2id)[0] if test else None
-    return train, dev, test, label2id
-  else:
-    train, label2id = prepare_entity_typing_dataset(model, "train", only_label2id=True)
-    dev,   label2id = prepare_entity_typing_dataset(model, "dev",   label2id)
-    test,  label2id = prepare_entity_typing_dataset(model, "test",  label2id)
-    with open(label2id_file, "w") as label2id_stream:
-      label2id_stream.write(json.dumps(label2id))
+  # if os.path.isfile(label2id_file):
+  #   with open(label2id_file, "r") as label2id_stream:
+  #     label2id = json.loads(label2id_stream.read())
+  #   train = prepare_entity_typing_dataset(model, "train", label2id)[0] if train else None
+  #   dev   = prepare_entity_typing_dataset(model, "dev",   label2id)[0] if dev else None
+  #   test  = prepare_entity_typing_dataset(model, "test" , label2id)[0] if test else None
+  #   return train, dev, test, label2id
+  # else:
+  train, label2id = prepare_entity_typing_dataset(model, "train", only_label2id=True)
+  dev,   label2id = prepare_entity_typing_dataset(model, "dev",   label2id, only_label2id= tokenize)
+  test,  label2id = prepare_entity_typing_dataset(model, "test",  label2id,  only_label2id= tokenize)
+  with open(label2id_file, "w") as label2id_stream:
+    label2id_stream.write(json.dumps(label2id))
   return train, dev, test, label2id
     
 

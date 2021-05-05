@@ -262,24 +262,28 @@ def load_model(experiment_name: str,
     classification_model.configuration = new_configuration
     #
     # read training & development data
-    native = configuration("DatasetName", "train") == configuration("DatasetName", "test").split("_filtered_with_")[0] 
+    native = configuration("DatasetName", "train") == configuration("DatasetName", "test").split("_filtered_with_")[0]
     _, dev_dataset, test_dataset, label2id = \
         prepare_entity_typing_datasets(classification_model,
                                        train = False,
                                        dev = configuration("DevOrTest") == "both" and native,
-                                       test = native)
+                                       test = native,
+                                       tokenize = '_filtered_with_' in configuration("DatasetName", "test"))
     #
     # add the classifier for the given data
     add_classifier(classification_model, label2id)
     #
     # load the mapper if not native
     mapping = None
-    if not native:
+    if not native or '_filtered_with_' in configuration("DatasetName", "test"):
         native_train    = configuration("DatasetName", "train")
         non_native_test = configuration("DatasetName", "test")
         # non_native_dev  = native_train if configuration("DevOrTest") == "both" \
             # else non_native_test
-        mapping = MAPPINGS[native_train]()[non_native_test.split('_')[0]]
+        if not native:
+            mapping = MAPPINGS[native_train]()[non_native_test.split('_')[0]]
+        elif '_filtered_with_' in configuration("DatasetName", "test"):
+            mapping = MAPPINGS[native_train]()[non_native_test.split('_')[3]]
         # _, dev_dataset, test_dataset, label2id  = prepare_entity_typing_dataset_only_sentences_and_string_labels( classification_model,
                                                                                             # train = False,
                                                                                             # dev = configuration("DevOrTest") == "both",

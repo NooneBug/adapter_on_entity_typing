@@ -31,11 +31,14 @@ def compute_f1(p, r):
     return 2 * (p * r) / (p + r) if p + r else 0
 
 
-def filter_label(original_label, mapping_dict):
+def filter_label_and_return_translation(original_label, mapping_dict):
     return mapping_dict[original_label]
 
+def filter_label_and_return_original(original_label, mapping_dict):
+    return [original_label] if mapping_dict[original_label] else []
 
-def take_first_k_filtered(predictions, mapping_dict, id2label, k):
+
+def take_first_k_filtered(predictions, mapping_dict, id2label, k, filter_label):
     k_predicted_values = []
     k_predicted_idxs = []
     for predicted_value, value_id in zip(*torch.topk(predictions, k = len(predictions))):
@@ -79,6 +82,12 @@ def test(experiment):
         if model.configuration("DevOrTest") == "both":
             data_to_pred.append(get_loader(dev_dataset))
 
+        if mapping:
+            if model.configuration("DatasetName", 'train') == model.configuration("DatasetName", 'test').split('_')[0]:
+                filter_label = filter_label_and_return_original
+            elif model.configuration("DatasetName", 'train') == model.configuration("DatasetName", 'test').split('_')[3]:
+                filter_label = filter_label_and_return_translation
+
         for d, loader in zip(["test", "dev"], data_to_pred):
             all_preds = []
             all_preds_and_logits = []
@@ -86,6 +95,8 @@ def test(experiment):
             top_k_labels = []
             batch_start_index = 0
             
+            bar = tqdm(total = len(loader.dataset.labels), desc = 'Generating predictions')
+
             for mention, attn, labels in loader:
                 if mapping:
                     labels = loader.dataset.labels[batch_start_index: batch_start_index + BATCH_SIZE]
@@ -123,7 +134,8 @@ def test(experiment):
                         else take_first_k_filtered(pred, 
                                                    mapping, 
                                                    id2label, 
-                                                   k = 5)
+                                                   k = 5,
+                                                   filter_label = filter_label)
                     top_k_l = []
                     for val, index in zip(topk_values, topk_indexes):
                         val = round(val.item(), 3)
@@ -158,7 +170,8 @@ def test(experiment):
                           ex_labels.append(id2label[l.item()])
                       batch_labels.append(ex_labels)
                 all_labels.extend(batch_labels)
-
+                bar.update(BATCH_SIZE)
+            bar.close()
             correct_count = defaultdict(int)
             actual_count  = defaultdict(int)
             predict_count = defaultdict(int)
@@ -198,7 +211,6 @@ def test(experiment):
             #compute macro_example performances
             ma_e_precisions = []
             ma_e_recalls = []
-            n = len(all_labels)
             
             bar = tqdm(desc="computing macro examples performances", total=len(all_preds))
             for labels, preds in zip(all_labels, all_preds):
