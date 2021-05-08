@@ -8,6 +8,8 @@ import adapter_entity_typing.network
 from train import train
 from test  import test
 
+from adapter_entity_typing.network_classes.classifiers import adapterPLWrapper, EarlyStoppingWithColdStart
+
 
 
 if __name__ == "__main__":
@@ -33,4 +35,5 @@ if __name__ == "__main__":
 
         if not configuration("IsTrained?"):
             train(configuration("TrainingName"))
+        print("\n\ntesting {}\n\n".format(experiment))
         test(experiment)

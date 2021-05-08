@@ -70,8 +70,8 @@ def get_random_seed():
 
 
 def train(experiment):
+    print("Starting " + experiment + "\n\n")
     for i, s in enumerate(get_random_seed(), 1):
-        print("Training {} for the {} time".format(experiment, i))
         torch.manual_seed(s)
         torch.cuda.manual_seed(s)
         np.random.seed(s)
@@ -80,12 +80,16 @@ def train(experiment):
         torch.backends.cudnn.deterministic = True
         torch.cuda.empty_cache()
         
-        print("Starting " + experiment)
         model = get_model(experiment)
         
         # if already trained
-        pretrained_name = model.configuration("Traineds", "train")[i - 1]
-        print("Saving on " + pretrained_name)
+        # if i >= len(model.configuration("Traineds", "train")):
+        #     break
+        try:
+            pretrained_name = model.configuration("Traineds", "train")[i - 1]
+        except IndexError:
+            break
+        print("\n\nTraining {} for the {} time".format(experiment, i))
         if os.path.isfile(pretrained_name):
             print("Skipping")
             continue
@@ -107,9 +111,10 @@ def train(experiment):
         
         trainer = declare_callbacks_and_trainer(model)
         trainer.fit(pl_wrapper, train_loader, dev_loader)
+        print("Saving on " + pretrained_name)
 
         # if you have enough, stop it
-        if i >= model.configuration("n", "train"):
+        if i - 1 >= model.configuration("n", "train"):
             break
 
 

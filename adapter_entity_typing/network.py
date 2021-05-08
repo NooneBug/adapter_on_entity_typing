@@ -15,7 +15,7 @@ from result_scripts.import_mappings import import_bbn_mappings, import_choi_mapp
 import os
 import regex as re
 from adapter_entity_typing.utils import prepare_entity_typing_datasets, prepare_entity_typing_dataset_only_sentences_and_string_labels
-from adapter_entity_typing.network_classes.classifiers import adapterPLWrapper, EarlyStoppingWithColdStart
+from adapter_entity_typing.network_classes.classifiers import adapterPLWrapper  # , EarlyStoppingWithColdStart
 
 
 # the parameters file
@@ -71,7 +71,7 @@ def read_parameters(experiment: str,
     #
     def make_dir(x):
         path = os.path.normpath(x).split(os.sep)
-        complete_path = [os.path.join(*path[0:i]) for i in range(1, len(path))]
+        complete_path = [os.path.join(*path[0:i + 1]) for i in range(len(path))]
         for p in complete_path:
             if not os.path.isdir(p):
                 os.mkdir(p)
@@ -99,7 +99,7 @@ def read_parameters(experiment: str,
         test["PathInputDev"]   = config["data"][test["DatasetName"]]["Dev"]
         test["PathInputTest"]  = config["data"][test["DatasetName"]]["Test"]
         test["Traineds"] = repr(get_pretraineds(train, training_name))
-        test["IsTrained?"] = repr(all([os.path.isfile(x) for x in test["Traineds"]]))
+        test["IsTrained?"] = repr(all(map(os.path.isfile, eval(test["Traineds"]))))
         make_dir(test["PerformanceFile"])
         make_dir(test["PredictionFile"])
         make_dir(test["AvgStdFile"])
