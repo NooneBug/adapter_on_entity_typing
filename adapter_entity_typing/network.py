@@ -14,7 +14,7 @@ from result_scripts.import_mappings import import_bbn_mappings, import_choi_mapp
 
 import os
 import regex as re
-from adapter_entity_typing.utils import prepare_entity_typing_datasets, prepare_entity_typing_dataset_only_sentences_and_string_labels
+from adapter_entity_typing.utils import prepare_entity_typing_datasets, prepare_entity_typing_datasets_all_but, prepare_entity_typing_dataset_only_sentences_and_string_labels, get_label2id
 from adapter_entity_typing.network_classes.classifiers import adapterPLWrapper  # , EarlyStoppingWithColdStart
 
 
@@ -23,6 +23,8 @@ PARAMETERS = {
     "train": ("train.ini", True),
     "test":  ("test.ini",  True),
     "data":  ("data.ini",  True) }
+FINE_TUNING_PARAMETERS = "fine_tuning.ini"
+
 
 # the device to use 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() \
@@ -122,6 +124,7 @@ def read_parameters(experiment: str,
         "n":                   int,     # number of istances for the model
         "Patience":            int,     # patience befor early stop
         "ColdStart":           int,     # coldstart for early stopping
+        "LimitValBatches":     float,   # number of validation set batches per epoch
         "BatchSize":           int,     # batch size for both training and inference
         "LearningRate":        float,   # learning rate
         # 
@@ -235,9 +238,6 @@ def add_classifier(model, labels: dict = {}):
         id2label=labels)
 
 
-# experiment_name = "bert_ft_0_trained_on_figer_tested_on_figer"
-# config_file = PARAMETERS
-# pretrained = "bert-base-uncased"
 def load_model(experiment_name: str,
                config_file: dict = PARAMETERS,
                pretrained: str = "bert-base-uncased"):
@@ -311,4 +311,115 @@ def load_model(experiment_name: str,
         model.configuration = new_configuration
         model.to(DEVICE)
         model.eval()
+        yield model, dev_dataset, test_dataset, label2id, mapping
+
+        
+ 
+def get_model_to_finetune(experiment_name: str,
+                          config_file: dict = PARAMETERS,
+                          fine_tuning_file: str = FINE_TUNING_PARAMETERS,
+                          pretrained: str = "bert-base-uncased"):
+    """get_model, but it beilives that it is native even when it is not"""
+    config_file = config_file.copy()
+    fine_tuning = configparser.ConfigParser()
+    fine_tuning.read(fine_tuning_file)
+    fine_tuning = fine_tuning[experiment_name]
+
+    test_name = fine_tuning["TestName"]
+    training_name = config_file["test"][0][test_name]["TrainingName"]
+    training_name_sigla = test_to_train(training_name)
+    
+    classification_model = get_model(training_name, config_file, pretrained)
+    label2id = get_label2id(classification_model)
+    id2label = {v: k for k, v in label2id.items()}
+    
+    config_file["train"] = manipulate_config(config_file["train"][0],
+                                             training_name,
+                                             training_name_sigla,
+                                             **dict(fine_tuning))
+    
+    configuration = read_parameters(training_name_sigla,
+                                    train_or_test = "train",
+                                    configs = config_file,
+                                    true_name = experiment_name)
+
+    # load best n checkpoints
+    losses_path = os.path.join(
+        config_file["test"][test_name]["PerformanceFile"],
+        "{}_test.txt".format(test_name)
+    with open(losses_path, "r") as losses_file:
+        # 2 = macro_example_f1; 5 = macro_f1; 8 = micro_f1
+        losses = [float(x.split("\t")[2])
+                  for x in losses_file.read().split("\n")]
+    ckpts = list(zip(classification_model.configuration("Traineds", "train"), losses))
+    ckpts.sort(key = lambda x: x[1], reverse = True)
+    ckpts = [ckpt[0] for ckpt in ckpts[0:configuration("n")]]
+
+    # load (all) data
+    training_dataset = classification_model.configuration("DatasetName", "train")
+    data_configuration = configparser.ConfigParser()
+    data_configuration.read(config_file["data"][0])
+    data_sampled = prepare_entity_typing_datasets_all_but(classification_model,
+                                                          data = data_configuration,
+                                                          dataset_name = training_dataset,
+                                                          mapping = MAPPINGS[training_dataset],
+                                                          n = configuration("n"),
+                                                          k = configuration("k"),
+                                                          train = True,
+                                                          dev = True,
+                                                          test = False)
+
+    counter = range(1, configuration("n") + 1)
+    for i, ckpt, (train_dataset, dev_dataset, _) in zip(counter, ckpts, data_sampled):
+        print("Loading {} for the {} time".format(ckpt, i))
+        model = adapterPLWrapper.load_from_checkpoint(
+            ckpt,
+            adapterClassifier = classification_model,
+            id2label = id2label)
+        model.to(DEVICE)
+        model.configuration = configuration
+        yield model, train_dataset, dev_dataset, label2id
+
+
+
+def load_model_to_finetune(experiment_name: str,
+                           config_file: dict = PARAMETERS,
+                           fine_tuning_file: str = FINE_TUNING_PARAMETERS,
+                           pretrained: str = "bert-base-uncased"):
+    """load_model, but it beilives that it is native even when it is not"""
+    config_file = config_file.copy()
+    fine_tuning = configparser.ConfigParser()
+    fine_tuning.read(fine_tuning_test_file)
+    fine_tuning = fine_tuning_test[experiment_name]
+    
+    training_name = config_file["test"][0][fine_tuning_train["TestName"]]["TrainingName"]
+    training_name_sigla = test_to_train(training_name)
+
+    config_file["train"] = manipulate_config(config_file["train"][0],
+                                             training_name,
+                                             training_name_sigla,
+                                             **dict(fine_tuning))
+    config_file["test"] = manipulate_config(config_file["test"][0],
+                                            experiment_name,
+                                            training_name_sigla)
+    configuration = read_parameters(training_name_sigla,
+                                    train_or_test = "test",
+                                    configs = config_file,
+                                    true_name = experiment_name)
+
+    data_configuration = configparser.ConfigParser()
+    data_configuration.read(config_file["data"][0])
+    _, dev_dataset, test_dataset = prepare_entity_typing_datasets_all_but(classification_model,
+                                                                          data = data_configuration,
+                                                                          dataset_name = classification_model.configuration("DatasetName", "train"),
+                                                                          train = False,
+                                                                          dev   = True,
+                                                                          test  = True)
+    
+    for ckpt in configuration("Traineds"):
+        model = adapterPLWrapper.load_from_checkpoint(
+            ckpt,
+            adapterClassifier = classification_model,
+            id2label = id2label) 
+        model.configuration = configuration
         yield model, dev_dataset, test_dataset, label2id, mapping

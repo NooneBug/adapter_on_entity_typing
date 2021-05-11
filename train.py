@@ -26,6 +26,7 @@ def declare_callbacks_and_trainer(model):
     early_stopping_patience = model.configuration("Patience", "train")
     epochs = model.configuration("MaxEpochs", "train")
     cold_start = model.configuration("ColdStart", "train")
+    limit_val_batches = model.configuration("LimitValBatches", "train")
     early_stop_callback = EarlyStoppingWithColdStart(
                                         monitor='example_macro/macro_f1',
                                         min_delta=0.00,
@@ -36,12 +37,12 @@ def declare_callbacks_and_trainer(model):
                                         cold_start_epochs=cold_start)
     callbacks.append(early_stop_callback)
     checkpoint_callback = ModelCheckpoint(monitor='example_macro/macro_f1',
-                                          dirpath=model.configuration("PathModel"),
+                                          dirpath=model.configuration("PathModel", "train"),
                                           filename=experiment_name,
                                           mode='max',
                                           save_last=False)
     callbacks.append(checkpoint_callback)
-    logger = TensorBoardLogger(model.configuration("LightningPath"),
+    logger = TensorBoardLogger(model.configuration("LightningPath", "train"),
                                name=experiment_name,
                                default_hp_metric=False)
 
@@ -49,10 +50,8 @@ def declare_callbacks_and_trainer(model):
                       logger=logger,
                       gpus = 1, 
                       max_epochs=epochs,
-                      # TODO mettere come parametri (?)
-                      # TODO riguardare per Choi
                       limit_train_batches=300,
-                      # limit_val_batches=.25,
+                      limit_val_batches=limit_val_batches,
                       precision = 16)
     return trainer
 
@@ -82,9 +81,6 @@ def train(experiment):
         
         model = get_model(experiment)
         
-        # if already trained
-        # if i >= len(model.configuration("Traineds", "train")):
-        #     break
         try:
             pretrained_name = model.configuration("Traineds", "train")[i - 1]
         except IndexError:
