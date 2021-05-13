@@ -14,7 +14,7 @@ from result_scripts.import_mappings import import_bbn_mappings, import_choi_mapp
 
 import os
 import regex as re
-from adapter_entity_typing.utils import prepare_entity_typing_datasets, prepare_entity_typing_datasets_all_but, prepare_entity_typing_dataset_only_sentences_and_string_labels, get_label2id
+from adapter_entity_typing.utils import prepare_entity_typing_datasets, prepare_entity_typing_dataset_sampler, prepare_entity_typing_dataset_only_sentences_and_string_labels, get_label2id
 from adapter_entity_typing.network_classes.classifiers import adapterPLWrapper  # , EarlyStoppingWithColdStart
 
 
@@ -355,22 +355,17 @@ def get_model_to_finetune(experiment_name: str,
     ckpts.sort(key = lambda x: x[1], reverse = True)
     ckpts = [ckpt[0] for ckpt in ckpts[0:configuration("n")]]
 
-    # load (all) data
+    # load data
     training_dataset = classification_model.configuration("DatasetName", "train")
     data_configuration = configparser.ConfigParser()
     data_configuration.read(config_file["data"][0])
-    data_sampled = prepare_entity_typing_datasets_all_but(classification_model,
-                                                          data = data_configuration,
-                                                          dataset_name = training_dataset,
-                                                          mapping = MAPPINGS[training_dataset],
-                                                          n = configuration("n"),
-                                                          k = configuration("k"),
-                                                          train = True,
-                                                          dev = True,
-                                                          test = False)
+    _, dev_dataset, _, label2id = prepare_entity_typing_datasets(classification_model,
+                                                                 train=False, test=False)
+    train_dataset = prepare_entity_typing_dataset_sampler(model, "train", label2id)
+    train_dataset_sampler = lambda: train_dataset(configuration("k", "train"))
 
     counter = range(1, configuration("n") + 1)
-    for i, ckpt, (train_dataset, dev_dataset, _) in zip(counter, ckpts, data_sampled):
+    for i, ckpt in enumerate(ckpts, 1):
         print("Loading {} for the {} time".format(ckpt, i))
         model = adapterPLWrapper.load_from_checkpoint(
             ckpt,
@@ -378,7 +373,9 @@ def get_model_to_finetune(experiment_name: str,
             id2label = id2label)
         model.to(DEVICE)
         model.configuration = configuration
-        yield model, train_dataset, dev_dataset, label2id
+        yield model, train_dataset_sampler(), dev_dataset, label2id
+        if i >= model.configuration("n"):
+            break
 
 
 
@@ -409,12 +406,8 @@ def load_model_to_finetune(experiment_name: str,
 
     data_configuration = configparser.ConfigParser()
     data_configuration.read(config_file["data"][0])
-    _, dev_dataset, test_dataset = prepare_entity_typing_datasets_all_but(classification_model,
-                                                                          data = data_configuration,
-                                                                          dataset_name = classification_model.configuration("DatasetName", "train"),
-                                                                          train = False,
-                                                                          dev   = True,
-                                                                          test  = True)
+    _, dev_dataset, test_dataset, label2id = prepare_entity_typing_datasets(classification_model,
+                                                                            train = False)
     
     native = configuration("DatasetName", "train") == configuration("DatasetName", "test").split("_filtered_with_")[0]
     mapping = None
