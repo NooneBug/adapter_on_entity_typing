@@ -14,8 +14,8 @@ from result_scripts.import_mappings import import_bbn_mappings, import_choi_mapp
 
 import os
 import regex as re
-from adapter_entity_typing.utils import prepare_entity_typing_datasets, prepare_entity_typing_dataset_only_sentences_and_string_labels
-from adapter_entity_typing.network_classes.classifiers import adapterPLWrapper, EarlyStoppingWithColdStart
+from adapter_entity_typing.utils import prepare_entity_typing_datasets, prepare_entity_typing_datasets_all_but, prepare_entity_typing_dataset_only_sentences_and_string_labels, get_label2id
+from adapter_entity_typing.network_classes.classifiers import adapterPLWrapper  # , EarlyStoppingWithColdStart
 
 
 # the parameters file
@@ -23,6 +23,8 @@ PARAMETERS = {
     "train": ("train.ini", True),
     "test":  ("test.ini",  True),
     "data":  ("data.ini",  True) }
+FINE_TUNING_PARAMETERS = "fine_tuning.ini"
+
 
 # the device to use 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() \
@@ -51,7 +53,7 @@ def get_pretraineds(train_configuration, pretrained_name):
 
 def read_parameters(experiment: str,
                     train_or_test: str,
-                    configs: dict = PARAMETERS,
+                    configs: dict = PARAMETERS.copy(),
                     true_name: str = ""):
     """Read the configuration for a given experiment.
     Example of use:
@@ -71,7 +73,7 @@ def read_parameters(experiment: str,
     #
     def make_dir(x):
         path = os.path.normpath(x).split(os.sep)
-        complete_path = [os.path.join(*path[0:i]) for i in range(1, len(path))]
+        complete_path = [os.path.join(*path[0:i + 1]) for i in range(len(path))]
         for p in complete_path:
             if not os.path.isdir(p):
                 os.mkdir(p)
@@ -85,6 +87,7 @@ def read_parameters(experiment: str,
     train["PathInputTrain"] = config["data"][train["DatasetName"]]["Train"]
     train["PathInputDev"]   = config["data"][train["DatasetName"]]["Dev"]
     train["PathInputTest"]  = config["data"][train["DatasetName"]]["Test"]
+    train["Traineds"] = repr(get_pretraineds(train, true_name or training_name))
     train["PathPretrainedModel"] = os.path.join(
         train["PathModel"],
         experiment)
@@ -98,7 +101,7 @@ def read_parameters(experiment: str,
         test["PathInputDev"]   = config["data"][test["DatasetName"]]["Dev"]
         test["PathInputTest"]  = config["data"][test["DatasetName"]]["Test"]
         test["Traineds"] = repr(get_pretraineds(train, training_name))
-        test["IsTrained?"] = repr(all([os.path.isfile(x) for x in test["Traineds"]]))
+        test["IsTrained?"] = repr(all(map(os.path.isfile, eval(test["Traineds"]))))
         make_dir(test["PerformanceFile"])
         make_dir(test["PredictionFile"])
         make_dir(test["AvgStdFile"])
@@ -117,10 +120,11 @@ def read_parameters(experiment: str,
         "PathInputDev":        str,     # path of the dev set
         # 
         "MaxEntitySize":       int,     # max number of words in the entity mention (the last words will be cutted)
-        "MaxEpoch":            int,     # (maximum) number of training epoches
+        "MaxEpochs":           int,     # (maximum) number of training epoches
         "n":                   int,     # number of istances for the model
         "Patience":            int,     # patience befor early stop
         "ColdStart":           int,     # coldstart for early stopping
+        "LimitValBatches":     float,   # number of validation set batches per epoch
         "BatchSize":           int,     # batch size for both training and inference
         "LearningRate":        float,   # learning rate
         # 
@@ -161,7 +165,10 @@ def manipulate_config(config_name: str,
     """Manipulate a parameter file as you want"""
     config = configparser.ConfigParser()
     config.read(config_name)
-    config_dict = dict(config[section])
+    try:
+        config_dict = dict(config[section])
+    except KeyError:
+        config_dict = dict(config[new_name])
     config_dict.update(others)
     out = ["[{}]".format(new_name if new_name else section)] + \
         ["{} = {}".format(k, v) for k, v in config_dict.items()]
@@ -189,6 +196,7 @@ def get_model(experiment_name: str,
     # https://docs.adapterhub.ml/classes/adapter_config.html#transformers.AdapterConfig
     # https://docs.adapterhub.ml/classes/model_mixins.html?highlight=add_adapter#transformers.ModelAdaptersMixin.add_adapter
     #
+    config_file = config_file.copy()
     new_experiment_name = test_to_train_name(experiment_name)
     if experiment_name != new_experiment_name:
         config_file["train"] = manipulate_config(config_file["train"][0],
@@ -230,14 +238,12 @@ def add_classifier(model, labels: dict = {}):
         id2label=labels)
 
 
-# experiment_name = "bert_ft_0_trained_on_figer_tested_on_figer"
-# config_file = PARAMETERS
-# pretrained = "bert-base-uncased"
 def load_model(experiment_name: str,
                config_file: dict = PARAMETERS,
                pretrained: str = "bert-base-uncased"):
 
     """Load the model for a given EXPERIMENT_NAME."""
+    config_file = config_file.copy()
     configuration = read_parameters(experiment_name, "test", config_file)
     training_name = test_to_train_name(configuration("TrainingName")) 
     config_test_str  = manipulate_config(config_file["test"][0],
@@ -305,4 +311,126 @@ def load_model(experiment_name: str,
         model.configuration = new_configuration
         model.to(DEVICE)
         model.eval()
+        yield model, dev_dataset, test_dataset, label2id, mapping
+
+        
+ 
+def get_model_to_finetune(experiment_name: str,
+                          config_file: dict = PARAMETERS,
+                          fine_tuning_file: str = FINE_TUNING_PARAMETERS,
+                          pretrained: str = "bert-base-uncased"):
+    """get_model, but it beilives that it is native even when it is not"""
+    config_file = config_file.copy()
+    fine_tuning = configparser.ConfigParser()
+    fine_tuning.read(fine_tuning_file)
+    fine_tuning = fine_tuning[experiment_name]
+
+    test_name = fine_tuning["TestName"]
+    training_name = config_file["test"][0][test_name]["TrainingName"]
+    training_name_sigla = test_to_train(training_name)
+    
+    classification_model = get_model(training_name, config_file, pretrained)
+    label2id = get_label2id(classification_model)
+    id2label = {v: k for k, v in label2id.items()}
+    
+    config_file["train"] = manipulate_config(config_file["train"][0],
+                                             training_name,
+                                             training_name_sigla,
+                                             **dict(fine_tuning))
+    
+    configuration = read_parameters(training_name_sigla,
+                                    train_or_test = "train",
+                                    configs = config_file,
+                                    true_name = experiment_name)
+
+    # load best n checkpoints
+    losses_path = os.path.join(
+        config_file["test"][test_name]["PerformanceFile"],
+        "{}_test.txt".format(test_name))
+    with open(losses_path, "r") as losses_file:
+        # 2 = macro_example_f1; 5 = macro_f1; 8 = micro_f1
+        losses = [float(x.split("\t")[2])
+                  for x in losses_file.read().split("\n")]
+    ckpts = list(zip(classification_model.configuration("Traineds", "train"), losses))
+    ckpts.sort(key = lambda x: x[1], reverse = True)
+    ckpts = [ckpt[0] for ckpt in ckpts[0:configuration("n")]]
+
+    # load (all) data
+    training_dataset = classification_model.configuration("DatasetName", "train")
+    data_configuration = configparser.ConfigParser()
+    data_configuration.read(config_file["data"][0])
+    data_sampled = prepare_entity_typing_datasets_all_but(classification_model,
+                                                          data = data_configuration,
+                                                          dataset_name = training_dataset,
+                                                          mapping = MAPPINGS[training_dataset],
+                                                          n = configuration("n"),
+                                                          k = configuration("k"),
+                                                          train = True,
+                                                          dev = True,
+                                                          test = False)
+
+    counter = range(1, configuration("n") + 1)
+    for i, ckpt, (train_dataset, dev_dataset, _) in zip(counter, ckpts, data_sampled):
+        print("Loading {} for the {} time".format(ckpt, i))
+        model = adapterPLWrapper.load_from_checkpoint(
+            ckpt,
+            adapterClassifier = classification_model,
+            id2label = id2label)
+        model.to(DEVICE)
+        model.configuration = configuration
+        yield model, train_dataset, dev_dataset, label2id
+
+
+
+def load_model_to_finetune(experiment_name: str,
+                           config_file: dict = PARAMETERS,
+                           fine_tuning_file: str = FINE_TUNING_PARAMETERS,
+                           pretrained: str = "bert-base-uncased"):
+    """load_model, but it beilives that it is native even when it is not"""
+    config_file = config_file.copy()
+    fine_tuning = configparser.ConfigParser()
+    fine_tuning.read(fine_tuning_test_file)
+    fine_tuning = fine_tuning_test[experiment_name]
+    
+    training_name = config_file["test"][0][fine_tuning_train["TestName"]]["TrainingName"]
+    training_name_sigla = test_to_train(training_name)
+
+    config_file["train"] = manipulate_config(config_file["train"][0],
+                                             training_name,
+                                             training_name_sigla,
+                                             **dict(fine_tuning))
+    config_file["test"] = manipulate_config(config_file["test"][0],
+                                            experiment_name,
+                                            training_name_sigla)
+    configuration = read_parameters(training_name_sigla,
+                                    train_or_test = "test",
+                                    configs = config_file,
+                                    true_name = experiment_name)
+
+    data_configuration = configparser.ConfigParser()
+    data_configuration.read(config_file["data"][0])
+    _, dev_dataset, test_dataset = prepare_entity_typing_datasets_all_but(classification_model,
+                                                                          data = data_configuration,
+                                                                          dataset_name = classification_model.configuration("DatasetName", "train"),
+                                                                          train = False,
+                                                                          dev   = True,
+                                                                          test  = True)
+    
+    native = configuration("DatasetName", "train") == configuration("DatasetName", "test").split("_filtered_with_")[0]
+    mapping = None
+    if not native or '_filtered_with_' in configuration("DatasetName", "test"):
+        native_train    = configuration("DatasetName", "train")
+        non_native_test = configuration("DatasetName", "test")
+        if not native:
+            mapping = MAPPINGS[native_train]()[non_native_test.split('_')[0]]
+        elif '_filtered_with_' in configuration("DatasetName", "test"):
+            mapping = MAPPINGS[native_train]()[non_native_test.split('_')[3]]
+
+
+    for ckpt in configuration("Traineds"):
+        model = adapterPLWrapper.load_from_checkpoint(
+            ckpt,
+            adapterClassifier = classification_model,
+            id2label = id2label) 
+        model.configuration = configuration
         yield model, dev_dataset, test_dataset, label2id, mapping

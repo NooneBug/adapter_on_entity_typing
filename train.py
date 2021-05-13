@@ -1,7 +1,7 @@
 from torch.nn.modules.loss import BCELoss
 from torch.utils.data.dataloader import DataLoader
 from adapter_entity_typing.utils import prepare_entity_typing_dataset
-from adapter_entity_typing.network import get_model, add_classifier
+from adapter_entity_typing.network import get_model, add_classifier, PARAMETERS
 from torch.utils.data import DataLoader
 from torch.optim import Adam
 import torch
@@ -26,6 +26,7 @@ def declare_callbacks_and_trainer(model):
     early_stopping_patience = model.configuration("Patience", "train")
     epochs = model.configuration("MaxEpochs", "train")
     cold_start = model.configuration("ColdStart", "train")
+    limit_val_batches = model.configuration("LimitValBatches", "train")
     early_stop_callback = EarlyStoppingWithColdStart(
                                         monitor='example_macro/macro_f1',
                                         min_delta=0.00,
@@ -36,12 +37,12 @@ def declare_callbacks_and_trainer(model):
                                         cold_start_epochs=cold_start)
     callbacks.append(early_stop_callback)
     checkpoint_callback = ModelCheckpoint(monitor='example_macro/macro_f1',
-                                          dirpath=model.configuration("PathModel"),
+                                          dirpath=model.configuration("PathModel", "train"),
                                           filename=experiment_name,
                                           mode='max',
                                           save_last=False)
     callbacks.append(checkpoint_callback)
-    logger = TensorBoardLogger(model.configuration("LightningPath"),
+    logger = TensorBoardLogger(model.configuration("LightningPath", "train"),
                                name=experiment_name,
                                default_hp_metric=False)
 
@@ -49,10 +50,8 @@ def declare_callbacks_and_trainer(model):
                       logger=logger,
                       gpus = 1, 
                       max_epochs=epochs,
-                      # TODO mettere come parametri (?)
-                      # TODO riguardare per Choi
                       limit_train_batches=300,
-                      # limit_val_batches=.25,
+                      limit_val_batches=limit_val_batches,
                       precision = 16)
     return trainer
 
@@ -70,8 +69,8 @@ def get_random_seed():
 
 
 def train(experiment):
+    print("Starting " + experiment + "\n\n")
     for i, s in enumerate(get_random_seed(), 1):
-        print("Training {} for the {} time".format(experiment, i))
         torch.manual_seed(s)
         torch.cuda.manual_seed(s)
         np.random.seed(s)
@@ -80,11 +79,14 @@ def train(experiment):
         torch.backends.cudnn.deterministic = True
         torch.cuda.empty_cache()
         
-        print("Starting " + experiment)
         model = get_model(experiment)
         
-        # if already trained
-        if os.path.isfile(get_pretrained_name(model.configuration("PathPretrainedModel"), i)):
+        try:
+            pretrained_name = model.configuration("Traineds", "train")[i - 1]
+        except IndexError:
+            break
+        print("\n\nTraining {} for the {} time".format(experiment, i))
+        if os.path.isfile(pretrained_name):
             print("Skipping")
             continue
 
@@ -105,9 +107,10 @@ def train(experiment):
         
         trainer = declare_callbacks_and_trainer(model)
         trainer.fit(pl_wrapper, train_loader, dev_loader)
+        print("Saving on " + pretrained_name)
 
         # if you have enough, stop it
-        if i >= model.configuration("n", "train"):
+        if i - 1 >= model.configuration("n", "train"):
             break
 
 

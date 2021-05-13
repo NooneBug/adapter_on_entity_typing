@@ -7,31 +7,54 @@ from collections import defaultdict
 import adapter_entity_typing.network
 from train import train
 from test  import test
+from fine_tuning_train import train as ft_train
+from fine_tuning_test  import test  as ft_test
 
+from adapter_entity_typing.network_classes.classifiers import adapterPLWrapper, EarlyStoppingWithColdStart
+
+
+
+def make_experiments(experiments: dict, datasets: list, train_fn, test_fn):
+    for dataset in datasets:
+        for experiment in experiments[dataset]:
+            configuration = adapter_entity_typing.network.read_parameters(experiment,
+                                                                      "test",
+                                                                      parameters)
+
+            if not configuration("IsTrained?"):
+                print("\n\ntraining {}\n\n".format(configuration("TrainingName")))
+                train_fn(configuration("TrainingName"))
+            print("\n\ntesting {}\n\n".format(experiment))
+            test_fn(experiment)
 
 
 if __name__ == "__main__":
-    parameters = adapter_entity_typing.network.PARAMETERS
 
+    # GROUP 1
+    parameters = adapter_entity_typing.network.PARAMETERS
     tests = configparser.ConfigParser()
     tests.read(parameters["test"][0])
-    experiments = tests.sections()[1:]
-    
+    experiments = tests.sections()[1:]    
     experiments_per_dataset = defaultdict(list)
     for experiment in experiments:
         dataset = re.search(r"(?<=_)\w+", tests[experiment]["TrainingName"]).group()
         experiments_per_dataset[dataset].append(experiment)
         
-    for experiment in \
-        experiments_per_dataset["BBN"] + \
-        experiments_per_dataset["Choi"]:
-        # experiments_per_dataset["FIGER"] + \
-        # experiments_per_dataset["OntoNotes"] + \
-        
-        configuration = adapter_entity_typing.network.read_parameters(experiment,
-                                                                      "test",
-                                                                      parameters)
+    for dataset in experiments_per_dataset.keys():
+        continue # TODO: rimuovere prima della pubblicazione
+        make_experiments(experiments_per_dataset, dataset, train, test)
 
-        if not configuration("IsTrained?"):
-            train(configuration("TrainingName"))
-        test(experiment)
+
+    # TODO: GROUP 2
+    parameters_ft = adapter_entity_typing.network.FINE_TUNING_PARAMETERS
+    tests = configparser.ConfigParser()
+    tests.read(parameters_ft)
+    experiments = tests.sections()[1:]
+
+    experiments_per_dataset = defaultdict(list)
+    for experiment in experiments:
+        dataset = experiment.split("_")[1]
+        experiments_per_dataset[dataset].append(experiment.lower())
+
+    for dataset in experiments_per_dataset.keys():
+        make_experiments(experiments_per_dataset, dataset, train_ft, test_ft)
