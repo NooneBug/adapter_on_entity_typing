@@ -9,9 +9,11 @@ datasets.name <- list("bbn" = "BBN",
                       "onto" = "OntoNotes")
 training_datasets <- datasets  # c("bbn", "onto")
 models   <- c("bert_ft_0", "bert_ft_2", "adapter_2", "adapter_16")
-models.name <- c("bert_ft_2"  = "Bert finetuned 2",
-                 "adapter_2"  = "Adapters rf = 2",
-                 "adapter_16" = "Adapters rf = 16")
+models <- factor(models, models)
+models.name <- list("bert_ft_0"  = "Bert finetuned 0",
+                    "bert_ft_2"  = "Bert finetuned 2",
+                    "adapter_2"  = "Adapters rf = 2",
+                    "adapter_16" = "Adapters rf = 16")
 confidence <- 0.95
 n <- 5
 
@@ -20,14 +22,14 @@ library(tidyverse)
 library(gridExtra)
 
 
-read_performance <- function(model, train_dataset, mapped) {
-  directory <- "../results/avgs_stds/"
-  file <- ifelse(train_dataset == mapped,
-                 paste(model, train_dataset, "test.txt",
-                       sep = "_"),
-                 paste(model, train_dataset, "on", train_dataset, "filtered_w", mapped, "test.txt",
-                       sep = "_"))
-  data <- read_csv(paste0(directory, file))
+read_performance <- function(model, train_dataset, test_dataset) {
+  file <- paste0(model,
+                 "_trained_on_", train_dataset,
+                 "_tested_on_", test_dataset,
+                 ifelse(train_dataset != test_dataset, paste0("_filtered_with_", train_dataset), ""),
+                 "_test.txt")
+  filepath <- paste("../results/avgs_stds/", file, sep="")
+  data <- read_csv(filepath)
   list("micro"         = filter(data, model == "micro_f1")[1, "mu", drop = TRUE],
        "micro.sd"      = filter(data, model == "micro_f1")[1, "sd", drop = TRUE],
        "macro"         = filter(data, model == "macro_f1")[1, "mu", drop = TRUE],
@@ -106,7 +108,7 @@ for (metric in metrics) {
                position=position_dodge()) +
       theme_minimal() +
       ylim(0, 1) +
-      ggtitle(paste0("Trainied on ", train)) +
+      ggtitle(paste0("Trained on ", train)) +
       xlab("Tested on ") +
       ylab(get_metric_name(metric)) +
       scale_x_discrete() +
