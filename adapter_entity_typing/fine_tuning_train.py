@@ -13,7 +13,7 @@ from adapter_entity_typing.network_classes.classifiers import adapterPLWrapper, 
 from pytorch_lightning.callbacks import ModelCheckpoint
 from pytorch_lightning import Trainer
 from pytorch_lightning.loggers import TensorBoardLogger
-from train import declare_callbacks_and_trainer, get_pretrained_name, get_random_seed
+from adapter_entity_typing.train import declare_callbacks_and_trainer, get_pretrained_name, get_random_seed
 
 if torch.cuda.is_available():
     print('gpu on')

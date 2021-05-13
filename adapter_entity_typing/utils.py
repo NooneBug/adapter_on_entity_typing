@@ -194,7 +194,8 @@ def read_data(path: str, label2id: dict = dict(), cache_path: str = ""):
   with open(path, "r") as data_file:
     data = [json.loads(l) for l in data_file.readlines()]
   tokenized_sents, attn_masks = [], []
-  if os.path.isfile(cache_path):  # TODO: sostituire a False se la cache ha problemi
+  # if os.path.isfile(cache_path):  # TODO: sostituire a False se la cache ha problemi
+  if False: 
     with open(cache_path, "r") as cache_file:
       cache = [json.loads(l) for l in data_file.readlines()]
     tokenized_sents = [j["tokenized_sent"] for j in cache]

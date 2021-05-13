@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
 
-
 from adapter_entity_typing.network_classes.classifiers import EarlyStoppingWithColdStart
 from torch.utils.data.dataloader import DataLoader
-from adapter_entity_typing.network import load_model_to_finetune, DEVICE
+from adapter_entity_typing.network import load_model, DEVICE
 from collections import defaultdict
 import torch
 import json
@@ -13,11 +12,43 @@ import os
 
 import sys
 
-from test import sig, BATCH_SIZE, WORKERS, stats_name, trimmed_stats, compute_f1
-from test import filter_label_and_return_translation
-from test import filter_label_and_return_original
-from test import take_first_k_filtered
 
+sig = torch.nn.Sigmoid()
+BATCH_SIZE = 100
+WORKERS    = 20
+stats_name = {
+    "p": "precision",
+    "r": "recall",
+    "f1": "f1" }
+
+
+def trimmed_stats(x, sampled = True):
+    x_sorted = np.sort(x)[1:-1]
+    return x_sorted.mean(), x_sorted.std(ddof = 1 if sampled else 0)
+
+
+def compute_f1(p, r):
+    return 2 * (p * r) / (p + r) if p + r else 0
+
+
+def filter_label_and_return_translation(original_label, mapping_dict):
+    return mapping_dict[original_label]
+
+def filter_label_and_return_original(original_label, mapping_dict):
+    return [original_label] if mapping_dict[original_label] else []
+
+
+def take_first_k_filtered(predictions, mapping_dict, id2label, k, filter_label):
+    k_predicted_values = []
+    k_predicted_idxs = []
+    for predicted_value, value_id in zip(*torch.topk(predictions, k = len(predictions))):
+        translation = filter_label(id2label[value_id.item()], mapping_dict)
+        if translation:
+            k_predicted_values.append(predicted_value)
+            k_predicted_idxs.append(value_id)
+        if len(k_predicted_values) >= k:
+            break
+    return k_predicted_values, k_predicted_idxs
 
 
 def test(experiment):
@@ -34,8 +65,18 @@ def test(experiment):
         "p":  {"dev": [], "test": []},
         "r":  {"dev": [], "test": []},
         "f1": {"dev": [], "test": []}}
+
+    discounteds = {
+        "p":  {"dev": [], "test": []},
+        "r":  {"dev": [], "test": []},
+        "f1": {"dev": [], "test": []}}
     
-    for model, dev_dataset, test_dataset, label2id, mapping in load_model_to_finetune(experiment):
+    at_leasts = {
+        "p":  {"dev": [], "test": []},
+        "r":  {"dev": [], "test": []},
+        "f1": {"dev": [], "test": []}}
+    
+    for model, dev_dataset, test_dataset, label2id, mapping in load_model(experiment):
         performance_file = os.path.join(
             model.configuration("PerformanceFile"),
             model.configuration("ExperimentName"))
@@ -160,6 +201,7 @@ def test(experiment):
               label_names = [l0 for l in label2id.keys() for l0 in filter_label(l, mapping_dict = mapping)]
             else:
               label_names = label2id.keys() 
+            
             precisions = {k: correct_count[k] / predict_count[k]
                           if predict_count[k] else 0
                           for k in label_names}
@@ -176,7 +218,38 @@ def test(experiment):
             macros['p'][d].append(macro_p)
             macros['r'][d].append(macro_r)
             macros['f1'][d].append(macro_f1)
+
+            # compute precision, recall and f1 only for classes which appear in the test set
+            discounted_ma_p = {}
+            discounted_ma_r = {}
+            for l in label_names:
+                if actual_count[l]:
+                    discounted_ma_p[l] = correct_count[l] / predict_count[l] if predict_count[l] else 0
+                    discounted_ma_r[l] =  correct_count[l] / actual_count[l]
+            discounted_ma_p = np.mean(list(discounted_ma_p.values()))
+            discounted_ma_r = np.mean(list(discounted_ma_r.values()))
+            discounted_ma_f1 = compute_f1(discounted_ma_p, discounted_ma_r)
+
+            discounteds['p'][d].append(discounted_ma_p)
+            discounteds['r'][d].append(discounted_ma_r)
+            discounteds['f1'][d].append(discounted_ma_f1)
+
+            # compute precision, recall and f1 only for classes which appear at least K times in the test set
+            K = 6
+            at_least_ma_p = {}
+            at_least_ma_r = {}
+            for l in label_names:
+                if actual_count[l] >= K:
+                    at_least_ma_p[l] = correct_count[l] / predict_count[l] if predict_count[l] else 0
+                    at_least_ma_r[l] = correct_count[l] / actual_count[l]
+            at_least_ma_p = np.mean(list(at_least_ma_p.values()))
+            at_least_ma_r = np.mean(list(at_least_ma_r.values()))
+            at_least_ma_f1 = compute_f1(at_least_ma_p, at_least_ma_r)
             
+            at_leasts['p'][d].append(at_least_ma_p)
+            at_leasts['r'][d].append(at_least_ma_r)
+            at_leasts['f1'][d].append(at_least_ma_f1)
+
             #compute macro_example performances
             ma_e_precisions = []
             ma_e_recalls = []
@@ -264,7 +337,13 @@ def test(experiment):
                                                                                                             macro_f1,
                                                                                                             micro_p,
                                                                                                             micro_r,
-                                                                                                            micro_f1))
+                                                                                                            micro_f1,
+                                                                                                            discounted_ma_p,
+                                                                                                            discounted_ma_r,
+                                                                                                            discounted_ma_f1,
+                                                                                                            at_least_ma_p,
+                                                                                                            at_least_ma_r,
+                                                                                                            at_least_ma_f1))
 
     keys = ['test']
     if micros['f1']['dev']:
@@ -272,8 +351,8 @@ def test(experiment):
 
     for d in keys:
         results = {}
-        for result_name, result in zip(["micro", "macro", "example"],
-                                       [ micros,  macros, macro_examples]):
+        for result_name, result in zip(["micro", "macro", "example", "discounted", 'at_least'],
+                                       [ micros,  macros, macro_examples, discounteds, at_leasts]):
             print(result_name)
             print(result)
             print()

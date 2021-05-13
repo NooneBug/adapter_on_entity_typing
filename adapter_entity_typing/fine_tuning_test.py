@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 
+
 from adapter_entity_typing.network_classes.classifiers import EarlyStoppingWithColdStart
 from torch.utils.data.dataloader import DataLoader
-from adapter_entity_typing.network import load_model, DEVICE
+from adapter_entity_typing.network import load_model_to_finetune, DEVICE
 from collections import defaultdict
 import torch
 import json
@@ -12,43 +13,11 @@ import os
 
 import sys
 
+from adapter_entity_typing.test import sig, BATCH_SIZE, WORKERS, stats_name, trimmed_stats, compute_f1
+from adapter_entity_typing.test import filter_label_and_return_translation
+from adapter_entity_typing.test import filter_label_and_return_original
+from adapter_entity_typing.test import take_first_k_filtered
 
-sig = torch.nn.Sigmoid()
-BATCH_SIZE = 100
-WORKERS    = 20
-stats_name = {
-    "p": "precision",
-    "r": "recall",
-    "f1": "f1" }
-
-
-def trimmed_stats(x, sampled = True):
-    x_sorted = np.sort(x)[1:-1]
-    return x_sorted.mean(), x_sorted.std(ddof = 1 if sampled else 0)
-
-
-def compute_f1(p, r):
-    return 2 * (p * r) / (p + r) if p + r else 0
-
-
-def filter_label_and_return_translation(original_label, mapping_dict):
-    return mapping_dict[original_label]
-
-def filter_label_and_return_original(original_label, mapping_dict):
-    return [original_label] if mapping_dict[original_label] else []
-
-
-def take_first_k_filtered(predictions, mapping_dict, id2label, k, filter_label):
-    k_predicted_values = []
-    k_predicted_idxs = []
-    for predicted_value, value_id in zip(*torch.topk(predictions, k = len(predictions))):
-        translation = filter_label(id2label[value_id.item()], mapping_dict)
-        if translation:
-            k_predicted_values.append(predicted_value)
-            k_predicted_idxs.append(value_id)
-        if len(k_predicted_values) >= k:
-            break
-    return k_predicted_values, k_predicted_idxs
 
 
 def test(experiment):
@@ -66,7 +35,7 @@ def test(experiment):
         "r":  {"dev": [], "test": []},
         "f1": {"dev": [], "test": []}}
     
-    for model, dev_dataset, test_dataset, label2id, mapping in load_model(experiment):
+    for model, dev_dataset, test_dataset, label2id, mapping in load_model_to_finetune(experiment):
         performance_file = os.path.join(
             model.configuration("PerformanceFile"),
             model.configuration("ExperimentName"))
