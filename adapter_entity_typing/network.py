@@ -346,7 +346,7 @@ def get_model_to_finetune(experiment_name: str,
     # load best n checkpoints
     losses_path = os.path.join(
         config_file["test"][test_name]["PerformanceFile"],
-        "{}_test.txt".format(test_name)
+        "{}_test.txt".format(test_name))
     with open(losses_path, "r") as losses_file:
         # 2 = macro_example_f1; 5 = macro_f1; 8 = micro_f1
         losses = [float(x.split("\t")[2])
@@ -416,6 +416,17 @@ def load_model_to_finetune(experiment_name: str,
                                                                           dev   = True,
                                                                           test  = True)
     
+    native = configuration("DatasetName", "train") == configuration("DatasetName", "test").split("_filtered_with_")[0]
+    mapping = None
+    if not native or '_filtered_with_' in configuration("DatasetName", "test"):
+        native_train    = configuration("DatasetName", "train")
+        non_native_test = configuration("DatasetName", "test")
+        if not native:
+            mapping = MAPPINGS[native_train]()[non_native_test.split('_')[0]]
+        elif '_filtered_with_' in configuration("DatasetName", "test"):
+            mapping = MAPPINGS[native_train]()[non_native_test.split('_')[3]]
+
+
     for ckpt in configuration("Traineds"):
         model = adapterPLWrapper.load_from_checkpoint(
             ckpt,
