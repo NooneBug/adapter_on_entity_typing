@@ -34,7 +34,7 @@ if __name__ == "__main__":
     parameters = adapter_entity_typing.network.PARAMETERS
     tests = configparser.ConfigParser()
     tests.read(parameters["test"][0])
-    experiments = tests.sections()[1:]    
+    experiments = tests.sections()    
     experiments_per_dataset = defaultdict(list)
     for experiment in experiments:
         dataset = re.search(r"(?<=_)\w+", tests[experiment]["TrainingName"]).group()

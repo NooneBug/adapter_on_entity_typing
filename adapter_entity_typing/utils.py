@@ -47,9 +47,7 @@ def save_dataset(dataset, label2id, path):
     pickle.dump((dataset, label2id), out)
 
   
-def prepare_entity_typing_dataset(model, path: str = "", tokenized_dir: str = "",
-                                  train_dev_test: str = "train",
-                                  label2id = None, only_label2id = False):
+def prepare_entity_typing_dataset(model, train_dev_test: str = "train", label2id = None, only_label2id = False):
   '''
   path: the dataset path (.json)
   label2id: if load == False and path is a (.json) is used to not generate a new dictionary 
@@ -58,14 +56,14 @@ def prepare_entity_typing_dataset(model, path: str = "", tokenized_dir: str = ""
         if load == True a dataset is loaded from path (togheter with its label2id)
   '''
   assert train_dev_test in ["train", "dev", "test"]
-  path = path or model.configuration(*{"train": ("PathInputTrain", "train"),
-                                      "dev":   ("PathInputDev",   "train"),
-                                      "test":  ("PathInputTest",  "train")}[train_dev_test])
+  path = model.configuration(*{"train": ("PathInputTrain", "train"),
+                               "dev":   ("PathInputDev",   "train"),
+                               "test":  ("PathInputTest",  "train")}[train_dev_test])
   if path == "None":
     return None, label2id
-  tokenized_dir = tokenized_dir or model.configuration("TokenizedDir", "data")
   max_context_side_size = model.configuration("MaxContextSideSize", "train")
   max_entity_size       = model.configuration("MaxEntitySize",      "train")
+  tokenized_dir         = model.configuration("TokenizedDir",       "data")
   dataset_name = model.configuration("DatasetName") + "." + train_dev_test
   
   t = time.time()
@@ -76,6 +74,7 @@ def prepare_entity_typing_dataset(model, path: str = "", tokenized_dir: str = ""
 
   if not only_label2id:
     sentences = get_sentences(lines, max_context_side_size, max_entity_size)
+  # TODO: riguardare
 
   # native = True
   # if train_dev_test == "test" and model.configuration("DatasetName", "train") != model.configuration("DatasetName", "test").split("_filtered_with_")[0]:
@@ -93,13 +92,13 @@ def prepare_entity_typing_dataset(model, path: str = "", tokenized_dir: str = ""
   if dataset_name and not only_label2id:
     tokenized_sent = []
     attn_masks = []
-    if os.path.isfile(dataset_file) and not only_label2id:
-      print("... reading from cache ...")
-      with open(dataset_file, "r") as dataset_file_tokenized:
-        for line in tqdm(dataset_file_tokenized.readlines()):
-          line_json = json.loads(line)
-          tokenized_sent.append(line_json["tokenized_sent"])
-          attn_masks.append(line_json["attn_masks"])
+    # if os.path.isfile(dataset_file) and not only_label2id:
+    #   print("... reading from cache ...")
+    #   with open(dataset_file, "r") as dataset_file_tokenized:
+    #     for line in tqdm(dataset_file_tokenized.readlines()):
+    #       line_json = json.loads(line)
+    #       tokenized_sent.append(line_json["tokenized_sent"])
+    #       attn_masks.append(line_json["attn_masks"])
     bd = BertDataset(sentences, labels, label_number = len(label2id),
                       tokenized_sent=tokenized_sent, attn_masks=attn_masks)
     return bd, label2id
@@ -120,35 +119,20 @@ def prepare_entity_typing_dataset(model, path: str = "", tokenized_dir: str = ""
     return None, label2id
 
 
-def prepare_entity_typing_datasets(model, train=True, dev=True, test=True,
-                                   tokenize=False, dataset_name: str = "", data = None):
-  train_set, dev_set, test_set = "", "", ""
-  tokenized_dir = ""
-  if data and dataset_name:
-    train_set = data[dataset_name]["Train"]
-    dev_set   = data[dataset_name]["Dev"]
-    test_set  = data[dataset_name]["Test"]
-    tokenized_dir = data[dataset_name]["TokenizedDir"]
-  elif dataset_name and not data:
-    raise Exception("Please provide a valid data configuration")
-  elif data and not dataset_name:
-    raise Exception("Please specify the dataset name")
+def prepare_entity_typing_datasets(model, train=True, dev=True, test=True, tokenize = False):
   label2id_file = os.path.join(model.configuration("TokenizedDir", "data"),
-                               (dataset_name if dataset_name else model.configuration("DatasetName"))
-                               + "_label2id.json")
-  if os.path.isfile(label2id_file):
-    with open(label2id_file, "r") as label2id_stream:
-      label2id = json.loads(label2id_stream.read())
-    train = prepare_entity_typing_dataset(model, train_set, tokenized_dir, "train", label2id)[0] \
-      if train else None
-    dev   = prepare_entity_typing_dataset(model, dev_set,   tokenized_dir,  "dev",   label2id)[0] \
-      if dev else None
-    test  = prepare_entity_typing_dataset(model, test_set,  tokenized_dir, "test" , label2id)[0] \
-      if test else None
-    return train, dev, test, label2id
-  train, label2id = prepare_entity_typing_dataset(model, train_set, tokenized_dir, "train",           only_label2id=True)
-  dev,   label2id = prepare_entity_typing_dataset(model, dev_set,   tokenized_dir, "dev",   label2id, only_label2id=tokenize)
-  test,  label2id = prepare_entity_typing_dataset(model, test_set,  tokenized_dir, "test",  label2id, only_label2id=tokenize)
+                               model.configuration("DatasetName") + "_label2id.json")
+  # if os.path.isfile(label2id_file):
+  #   with open(label2id_file, "r") as label2id_stream:
+  #     label2id = json.loads(label2id_stream.read())
+  #   train = prepare_entity_typing_dataset(model, "train", label2id)[0] if train else None
+  #   dev   = prepare_entity_typing_dataset(model, "dev",   label2id)[0] if dev else None
+  #   test  = prepare_entity_typing_dataset(model, "test" , label2id)[0] if test else None
+  #   return train, dev, test, label2id
+  # else:
+  train, label2id = prepare_entity_typing_dataset(model, "train", only_label2id=True)
+  dev,   label2id = prepare_entity_typing_dataset(model, "dev",   label2id, only_label2id= tokenize)
+  test,  label2id = prepare_entity_typing_dataset(model, "test",  label2id,  only_label2id= tokenize)
   with open(label2id_file, "w") as label2id_stream:
     label2id_stream.write(json.dumps(label2id))
   return train, dev, test, label2id
