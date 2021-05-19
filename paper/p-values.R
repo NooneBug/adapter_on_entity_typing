@@ -5,31 +5,17 @@ library(tidyverse)
 
 n <- 5
 
-read_performance <- function(file) {
+read_performance <- function(model, train_dataset, test_dataset, filtered) {
+  file <- paste0(model,
+                 "_trained_on_", train_dataset,
+                 "_tested_on_", test_dataset,
+                 ifelse(filtered != test_dataset, paste0("_filtered_with_", filtered), ""),
+                 "_test.txt")
   filepath <- paste("../results/avgs_stds/", file, sep="")
-  print(filepath)
-  if (file.exists(filepath)) {
-    data <- read_csv(filepath) %>%
-      filter(model == "example_f1")
-    return(list(mu = select(data, mu)[1, 1, drop = TRUE],
-                sd = select(data, sd)[1, 1, drop = TRUE]))
-  } else return(list(mu = 0.0,
-                     sd = 0.0))
-}
-read_performance.native <- function(model, train_dataset, filtered) {
-  file <- paste(model, train_dataset, "on", train_dataset, "filtered_w", filtered, "test.txt",
-                sep = "_")
-  return(read_performance(file))
-}
-read_performance.non_native <- function(model, train_dataset, test_dataset) {
-  directory <- "../results/avgs_stds/"
-  file <- paste(model,
-                train_dataset,
-                ifelse(test_dataset %in% c("bbn", "onto"), "to", "on"),
-                test_dataset,
-                "test.txt",
-                sep = "_")
-  return(read_performance(file))
+  data <- read_csv(filepath) %>%
+    filter(model == "example_f1")
+  return(list(mu = select(data, mu)[1, 1, drop = TRUE],
+              sd = select(data, sd)[1, 1, drop = TRUE]))
 }
 
 
@@ -58,6 +44,7 @@ data <- tibble(dataset = c(),
                filter  = c(),
                model   = c(),
                perc    = c(),
+               score   = c(),
                p       = c(),
                stars   = c())
 datasets <- c("bbn", "onto", "figer", "choi")
@@ -65,14 +52,56 @@ models <- c("bert_ft_0", "bert_ft_2", "adapter_2", "adapter_16")
 for (test_set in datasets)
   for (train_set in datasets) if (train_set != test_set)
     for (model in models) {
-      native     <- read_performance.native(model, train_set, test_set)
-      non.native <- read_performance.non_native(model, train_set, test_set)
+      native     <- read_performance(model, test_set,  test_set, train_set)
+      non.native <- read_performance(model, train_set, test_set, train_set)
       p <- calc_confidence(non.native, native, n)
       data <- data %>%
         add_row(dataset = train_set,
                 filter  = test_set,
                 model   = model,
+                score   = non.native$mu,
                 perc    = round(perc(native, non.native), 2),
                 p       = p,
                 stars   = print_confidence(p))
     }
+
+
+prepare_results <- function(score, perc, p, stars)
+  paste0(round(score, 2), " (", round(perc, 2), ") ", stars)
+
+prepare_rows <- function(data, model_label) {
+  data.out <- data %>% filter(model == model_label) %>%
+    mutate(model = prepare_results(score, perc, p, stars)) %>%
+    select(-score, -perc, -p, -stars)
+  data.colnames <- colnames(data.out)
+  data.colnames[data.colnames == "model"] <- model_label
+  colnames(data.out) <- data.colnames
+  data.out
+}
+
+data_table <- unique(select(data, dataset, filter))
+
+for (m in models) {
+  data_table <- data_table %>%
+    right_join(prepare_rows(data, m))
+}
+
+
+
+print_row <- function(row) {
+  paste(reduce(row, ~paste(.x, .y , sep = " & ")), "\\\\")
+}
+
+filename <- "results.tex"
+write(print_row(colnames(data_table)), filename)
+
+for (r in 1:nrow(data_table)) {
+  row <- print_row(data_table[r, , drop = FALSE])
+  write(row, filename, append = TRUE)
+}
+
+
+data_table <- data %>% filter(model == "bert_ft_0") %>%
+  mutate("bert_ft_0" = prepare_results(score, perc, p, stars))
+
+data_table <- data %>% filter

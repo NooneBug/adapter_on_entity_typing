@@ -197,44 +197,22 @@ def read_data(path: str, label2id: dict = dict(), cache_path: str = ""):
   return data, tokenized_sents, attn_masks
 
 
-def prepare_entity_typing_datasets_all_but(model, data, dataset_name: str,
-                                           n: int = 0, k: int = 0,  # <- sample parameters
-                                           train: bool = True, dev: bool = True, test: bool = True):  
-  train_sets = {"data": [], "tokenized_sents": [], "attn_masks": []}
-  dev_sets   = {"data": [], "tokenized_sents": [], "attn_masks": []}
-  test_sets  = {"data": [], "tokenized_sents": [], "attn_masks": []}
-  label2id   = get_label2id(model)
+def prepare_entity_typing_dataset_sampler(model, train_dev_test: str, label2id: dict):
+  data, tokenized_sents, attn_masks = [], [], []
   get_cache_file = lambda s, tdt: os.path.join(data[s]["TokenizedDir"], "{}.{}".format(s, tdt))
   for s in filter(lambda x: "filtered_with_" + dataset_name in x,
                   data.sections()):
-    if train:
-      d, t, a = read_data(data[s]["Train"], label2id, get_cache_file(s, "train"))
-      train_sets["data"].extend(d)
-      train_sets["tokenized_sents"].extend(t)
-      train_sets["attn_masks"].extend(a)
-    if dev:
-      d, t, a = read_data(data[s]["Dev"], label2id, get_cache_file(s, "dev"))
-      dev_sets["data"].extend(d)
-      dev_sets["tokenized_sents"].extend(t)
-      dev_sets["attn_masks"].extend(a)
-    if test:
-      d, t, a = read_data(data[s]["Test"], label2id, get_cache_file(s, "test"))
-      test_sets["data"].extend(d)
-      test_sets["tokenized_sents"].extend(t)
-      test_sets["attn_masks"].extend(a)
-
-  if not train:
-    return None, dev_sets, test_sets
-
-  train_sample = sample_filtered_dataset(train_sets, label2id = label2id)
-  if dev:
-    dev_sets = BertDataset(dev_sets["data"], label2id, len(label2id),
-                           dev_sets["tokenized_sents"], dev_sets["attn_masks"])
-  if test:
-    test_sets = BertDataset(test_sets["data"], label2id, len(label2id),
-                            test_sets["tokenized_sents"], test_sets["attn_masks"])
-  for i in range(n + 1):
-    yield train_sample(k), dev_sets, test_sets
+  dataset_name = model.configuration("DatasetName")
+  dataset_path = model.configuration("PathInput" + train_dev_test.capitalize(),
+                                     "train" if train_dev_test == "train" else "test")
+  data, tokenized_sents, attn_masks = read_data(dataset_path,
+                                                label2id,
+                                                get_cache_file(dataset_name, train_dev_test))
+  sampler = sample_filtered_dataset({"data":            data,
+                                     "tokenized_sents": tokenized_sents,
+                                     "attn_masks":      attn_masks},
+                                    label2id)
+  return sampler
 
 
 def get_labels(lines, label2id = None, only_labels = False, test = False, label_key = 'y_str'):
