@@ -11,10 +11,10 @@ from adapter_entity_typing.fine_tuning_train import fine_tune as ft_train
 from adapter_entity_typing.fine_tuning_test  import test  as ft_test
 
 from adapter_entity_typing.network_classes.classifiers import adapterPLWrapper, EarlyStoppingWithColdStart
+import os
 
 
-
-def make_experiments(experiments: dict, datasets: list, train_fn, test_fn):
+def make_experiments(experiments: dict, dataset: list, train_fn, test_fn):
     # for dataset in datasets:
     for experiment in experiments[dataset]:
         configuration = adapter_entity_typing.network.read_parameters(experiment,
@@ -36,7 +36,19 @@ if __name__ == "__main__":
     tests.read(parameters["test"][0])
     experiments = tests.sections()    
     experiments_per_dataset = defaultdict(list)
+    
+    experiments_to_do = []
     for experiment in experiments:
+        train_dataset = experiment.split('trained_on')[1].split('_')[1]
+        test_dataset = experiment.split('tested_on')[1].split('_')[1]
+        try:
+            filter_dataset = experiment.split('filtered_with')[1].split('_')[1]
+        except:
+            filter_dataset = None
+        if (filter_dataset and train_dataset != test_dataset) or not filter_dataset:
+            experiments_to_do.append(experiment)
+    # 
+    for experiment in experiments_to_do:
         dataset = re.search(r"(?<=_)\w+", tests[experiment]["TrainingName"]).group()
         experiments_per_dataset[dataset].append(experiment)
         

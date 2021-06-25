@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 
 from torch._C import device
-from transformers.modeling_bert import BertModelWithHeads
+# from transformers.modeling_bert import BertModelWithHeads
+from transformers.modeling_distilbert import DistilBertModelWithHeads as BertModelWithHeads
 import configparser
 
 import torch
@@ -15,13 +16,13 @@ from result_scripts.import_mappings import import_bbn_mappings, import_choi_mapp
 import os
 import regex as re
 from adapter_entity_typing.utils import prepare_entity_typing_datasets, prepare_entity_typing_dataset_sampler, prepare_entity_typing_dataset_only_sentences_and_string_labels, get_label2id
-from adapter_entity_typing.network_classes.classifiers import adapterPLWrapper  # , EarlyStoppingWithColdStart
+from adapter_entity_typing.network_classes.classifiers import adapterPLWrapper 
 
 
 # the parameters file
 PARAMETERS = {
     "train": ("train.ini", True),
-    "test":  ("test.ini",  True),
+    "test":  ("macro_t_test_bbn.ini",  True),
     "data":  ("data.ini",  True) }
 FINE_TUNING_PARAMETERS = "fine_tuning.ini"
 
@@ -190,7 +191,7 @@ def test_to_train_name(experiment_name):
 
 def get_model(experiment_name: str,
               config_file: dict = PARAMETERS,
-              pretrained: str = "bert-base-uncased"):
+              pretrained: str = "distilbert-base-uncased"):
     """Build the model with the configuration for a given experiment."""
     #
     # https://docs.adapterhub.ml/classes/adapter_config.html#transformers.AdapterConfig
@@ -218,9 +219,11 @@ def get_model(experiment_name: str,
     elif model.configuration("BertFineTuning"):
         # generate a partial string which will match with each parameter in the i-esim transformer
         layer_to_freeze = ["layer.{}.".format(i) \
-                           for i in range(0, 12 - model.configuration("BertFineTuning"))]
+                          #  for i in range(0, 12 - model.configuration("BertFineTuning"))]
+                           for i in range(0, 6 - model.configuration("BertFineTuning"))]
         layer_to_freeze.append("embeddings")
-        for name, param in model.bert.named_parameters():
+        # for name, param in model.bert.named_parameters():
+        for name, param in model.distilbert.named_parameters():
           if any(n in name for n in layer_to_freeze):
             param.requires_grad = False
     else:
@@ -240,7 +243,7 @@ def add_classifier(model, labels: dict = {}):
 
 def load_model(experiment_name: str,
                config_file: dict = PARAMETERS,
-               pretrained: str = "bert-base-uncased"):
+               pretrained: str = "distilbert-base-uncased"):
 
     """Load the model for a given EXPERIMENT_NAME."""
     config_file = config_file.copy()
@@ -318,7 +321,7 @@ def load_model(experiment_name: str,
 def get_model_to_finetune(experiment_name: str,
                           config_file: dict = PARAMETERS,
                           fine_tuning_file: str = FINE_TUNING_PARAMETERS,
-                          pretrained: str = "bert-base-uncased"):
+                          pretrained: str = "distilbert-base-uncased"):
     """get_model, but it beilives that it is native even when it is not"""
     config_file = config_file.copy()
     fine_tuning = configparser.ConfigParser()
@@ -382,7 +385,7 @@ def get_model_to_finetune(experiment_name: str,
 def load_model_to_finetune(experiment_name: str,
                            config_file: dict = PARAMETERS,
                            fine_tuning_file: str = FINE_TUNING_PARAMETERS,
-                           pretrained: str = "bert-base-uncased"):
+                           pretrained: str = "distilbert-base-uncased"):
     """load_model, but it beilives that it is native even when it is not"""
     config_file = config_file.copy()
     fine_tuning = configparser.ConfigParser()

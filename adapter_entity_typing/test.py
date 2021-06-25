@@ -299,13 +299,26 @@ def test(experiment):
             label_sentences = defaultdict(list)
             label_sentences = defaultdict(list)
 
+            train_dataset = experiment.split('trained_on')[1].split('_')[1]
+            test_dataset = experiment.split('tested_on')[1].split('_')[1]
+            try:
+              filter_dataset = experiment.split('filtered_with')[1].split('_')[1]
+            except:
+              filter_dataset = None
+
+
             bar = tqdm(desc="generating sentences", total=len(lines))
             for l, preds_and_logits, top_k in zip(lines, all_preds_and_logits, top_k_labels):
                 sentence = ' '.join(l['left_context_token'])
                 sentence += ' ' + l['mention_span'] + ' '
                 sentence += ' '.join(l['right_context_token'])
-                labels = l['y_str']
-
+                
+                if train_dataset == test_dataset and not filter_dataset:
+                  labels = l['y_str']
+                elif train_dataset != test_dataset and train_dataset == filter_dataset:
+                  labels = l['original_types_only_mapped']
+                elif train_dataset == test_dataset and train_dataset != filter_dataset:
+                  labels = l['y_str']
                 for lab in labels:
                     label_sentences[lab].append((sentence, l['mention_span'], preds_and_logits, top_k, labels))
                 bar.update(1)

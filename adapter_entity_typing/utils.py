@@ -202,6 +202,7 @@ def prepare_entity_typing_dataset_sampler(model, train_dev_test: str, label2id: 
   get_cache_file = lambda s, tdt: os.path.join(data[s]["TokenizedDir"], "{}.{}".format(s, tdt))
   for s in filter(lambda x: "filtered_with_" + dataset_name in x,
                   data.sections()):
+    pass
   dataset_name = model.configuration("DatasetName")
   dataset_path = model.configuration("PathInput" + train_dev_test.capitalize(),
                                      "train" if train_dev_test == "train" else "test")

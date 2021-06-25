@@ -10,7 +10,7 @@ class BertDatasetWithStringLabels(Dataset):
     def __init__(self, sent, labels, tokenized_sent, attn_masks):
         self.sent = sent
         self.labels = labels
-        self.tokenizer = AutoTokenizer.from_pretrained("bert-base-uncased")
+        self.tokenizer = AutoTokenizer.from_pretrained("distilbert-base-uncased")
         self.max_length = self.compute_max_length()        
         self.tokenized_sent, self.attn_masks = tokenized_sent, attn_masks
         if not tokenized_sent and not attn_masks:
@@ -50,7 +50,7 @@ class BertDataset(Dataset):
         self.sent = sent
         self.labels = labels
         self.label_number = label_number
-        self.tokenizer = AutoTokenizer.from_pretrained("bert-base-uncased")
+        self.tokenizer = AutoTokenizer.from_pretrained("distilbert-base-uncased")
         self.max_length = self.compute_max_length()        
         self.tokenized_sent, self.attn_masks = tokenized_sent, attn_masks
         if not tokenized_sent and not attn_masks:

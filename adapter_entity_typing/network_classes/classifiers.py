@@ -55,10 +55,7 @@ class adapterPLWrapper(pl.LightningModule):
                                                                             average='micro',
                                                                             multilabel=True)
     # self.micro_recall = self.micro_recall.to('cpu')
-    self.micro_f1 = pl.metrics.classification.F1(num_classes=len(self.id2label),
-                                                    average='micro',
-                                                    multilabel=True)
-    # self.micro_f1 = self.micro_f1.to('cpu')
+
     self.macro_precision = pl.metrics.classification.precision_recall.Precision(num_classes=len(self.id2label),
                                                                                 average='macro',
                                                                                 multilabel=True)
@@ -66,11 +63,7 @@ class adapterPLWrapper(pl.LightningModule):
     self.macro_recall = pl.metrics.classification.precision_recall.Recall(num_classes=len(self.id2label),
                                                                                 average='macro',
                                                                                 multilabel=True)
-    # self.macro_recall = self.macro_recall.to('cpu')
-    self.macro_f1 = pl.metrics.classification.F1(num_classes=len(self.id2label),
-                                                    average='macro',
-                                                    multilabel=True)
-    # self.macro_f1 = self.macro_f1.to('cpu')
+
     self.my_metrics = MyMetrics(id2label=id2label)
     # self.my_metrics = self.my_metrics.to('cpu')
 
@@ -111,13 +104,24 @@ class adapterPLWrapper(pl.LightningModule):
     self.compute_metrics()
   
   def compute_metrics(self):
-    self.log('micro/micro_f1', self.micro_f1.compute())
-    self.log('micro/micro_p', self.micro_precision.compute())
-    self.log('micro/micro_r', self.micro_recall.compute())
 
-    self.log('macro/macro_f1', self.macro_f1.compute())
-    self.log('macro/macro_p', self.macro_precision.compute())
-    self.log('macro/macro_r', self.macro_recall.compute())
+    micro_p = self.micro_precision.compute()
+    micro_r = self.micro_recall.compute()
+
+    micro_f1 = self.compute_f1(micro_p, micro_r)
+
+    self.log('micro/micro_f1', micro_f1)
+    self.log('micro/micro_p', micro_p)
+    self.log('micro/micro_r', micro_r)
+
+    macro_p = self.macro_precision.compute()
+    macro_r = self.macro_recall.compute()
+
+    macro_f1 = self.compute_f1(macro_p, macro_r)
+
+    self.log('macro/macro_f1', macro_f1)
+    self.log('macro/macro_p', macro_p)
+    self.log('macro/macro_r', macro_r)
 
     avg_pred_number, void_predictions, _, _, _, ma_p, ma_r, ma_f1, predicted_class_number = self.my_metrics.compute()
 
@@ -134,11 +138,9 @@ class adapterPLWrapper(pl.LightningModule):
     pred = self.get_discrete_pred(pred)
     labels = labels.int()
 
-    self.micro_f1.update(preds=pred, target=labels)
     self.micro_precision.update(preds=pred, target=labels)
     self.micro_recall.update(preds=pred, target=labels)
 
-    self.macro_f1.update(preds=pred, target=labels)
     self.macro_precision.update(preds=pred, target=labels)
     self.macro_recall.update(preds=pred, target=labels)
 
@@ -158,6 +160,10 @@ class adapterPLWrapper(pl.LightningModule):
         dp[i] = 1
     
     return discrete_pred
+
+  def compute_f1(self, p, r):	
+      return (2*p*r)/(p + r) if (p + r) else 0
+
 
 class MyMetrics(Metric):
     def __init__(self, id2label ,dist_sync_on_step=False):
@@ -257,7 +263,7 @@ class MyMetrics(Metric):
 
         macro_p = precision_sum / examples_in_dataset	
         macro_r = recall_sum / examples_in_dataset	
-        macro_f1 = f1_sum / examples_in_dataset	
+        macro_f1 = self.compute_f1(macro_p, macro_r)	
 
         avg_pred_number = prediction_counter / examples_in_dataset	
 
