@@ -325,22 +325,22 @@ def test(experiment):
             bar.close()
 
             ordered_labels = list(sorted(label_names))
-            with open(prediction_file + '_' + d + '.txt', 'a') as out:
-                out.write('{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n'.format('label_#', 'precision', 
-                                                                        'recall', 'f1', 'sentence', 'mention', 
-                                                                        'preds_and_logits', 'top_k_labels_and_logits', 'true_labels'))
-                for label in ordered_labels:
-                    for i, (sentence, mention, preds_and_logits, top_k, true_label) in enumerate(label_sentences[label], 1):
-                        out_string = '{}\t{:.4f}\t{:.4f}\t{:.4f}\t{}\t{}\t{}\t{}\t{}\n'.format(label + '_' + str(i),
-                                                                                               precisions[label],
-                                                                                               recalls[label],
-                                                                                               f1s[label],
-                                                                                               sentence,
-                                                                                               mention,
-                                                                                               preds_and_logits,
-                                                                                               top_k,
-                                                                                               true_label)
-                        out.write(out_string)
+            # with open(prediction_file + '_' + d + '.txt', 'a') as out:
+            #     out.write('{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n'.format('label_#', 'precision', 
+            #                                                             'recall', 'f1', 'sentence', 'mention', 
+            #                                                             'preds_and_logits', 'top_k_labels_and_logits', 'true_labels'))
+            #     for label in ordered_labels:
+            #         for i, (sentence, mention, preds_and_logits, top_k, true_label) in enumerate(label_sentences[label], 1):
+            #             out_string = '{}\t{:.4f}\t{:.4f}\t{:.4f}\t{}\t{}\t{}\t{}\t{}\n'.format(label + '_' + str(i),
+            #                                                                                    precisions[label],
+            #                                                                                    recalls[label],
+            #                                                                                    f1s[label],
+            #                                                                                    sentence,
+            #                                                                                    mention,
+            #                                                                                    preds_and_logits,
+            #                                                                                    top_k,
+            #                                                                                    true_label)
+            #             out.write(out_string)
             with open(performance_file + '_' + d + '.txt', 'a') as out:
                 out.write('{:.4f}\t{:.4f}\t{:.4f}\t{:.4f}\t{:.4f}\t{:.4f}\t{:.4f}\t{:.4f}\t{:.4f}\n'.format(macro_example_p,
                                                                                                             macro_example_r,
@@ -358,27 +358,27 @@ def test(experiment):
                                                                                                             at_least_ma_r,
                                                                                                             at_least_ma_f1))
 
-    keys = ['test']
-    if micros['f1']['dev']:
-      keys = ['test', 'dev']
+    # keys = ['test']
+    # if micros['f1']['dev']:
+    #   keys = ['test', 'dev']
 
-    for d in keys:
-        results = {}
-        for result_name, result in zip(["micro", "macro", "example", "discounted", 'at_least'],
-                                       [ micros,  macros, macro_examples, discounteds, at_leasts]):
-            print(result_name)
-            print(result)
-            print()
-            for k, v in result.items():
-                v = np.array(v[d])
-                mu, sd = trimmed_stats(v)
-                results["{}_{}".format(result_name, k)] = (mu, sd)
+    # for d in keys:
+    #     results = {}
+    #     for result_name, result in zip(["micro", "macro", "example", "discounted", 'at_least'],
+    #                                    [ micros,  macros, macro_examples, discounteds, at_leasts]):
+    #         print(result_name)
+    #         print(result)
+    #         print()
+    #         for k, v in result.items():
+    #             v = np.array(v[d])
+    #             mu, sd = trimmed_stats(v)
+    #             results["{}_{}".format(result_name, k)] = (mu, sd)
 
-        with open(average_std_file + '_'+ d + '.txt', 'a') as out:
-            out.write("model,mu,sd\n")
-            for k, (m, s) in results.items():
-                out.write('{},{:.4f},{:.4f}\n'.format(k, m, s))
-            out.write('\n')
+    #     with open(average_std_file + '_'+ d + '.txt', 'a') as out:
+    #         out.write("model,mu,sd\n")
+    #         for k, (m, s) in results.items():
+    #             out.write('{},{:.4f},{:.4f}\n'.format(k, m, s))
+    #         out.write('\n')
 
 
 

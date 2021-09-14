@@ -120,8 +120,6 @@ def prepare_entity_typing_dataset(model, train_dev_test: str = "train", label2id
 
 
 def prepare_entity_typing_datasets(model, train=True, dev=True, test=True, tokenize = False):
-  label2id_file = os.path.join(model.configuration("TokenizedDir", "data"),
-                               model.configuration("DatasetName") + "_label2id.json")
   # if os.path.isfile(label2id_file):
   #   with open(label2id_file, "r") as label2id_stream:
   #     label2id = json.loads(label2id_stream.read())
@@ -133,8 +131,8 @@ def prepare_entity_typing_datasets(model, train=True, dev=True, test=True, token
   train, label2id = prepare_entity_typing_dataset(model, "train", only_label2id=True)
   dev,   label2id = prepare_entity_typing_dataset(model, "dev",   label2id, only_label2id= tokenize)
   test,  label2id = prepare_entity_typing_dataset(model, "test",  label2id,  only_label2id= tokenize)
-  with open(label2id_file, "w") as label2id_stream:
-    label2id_stream.write(json.dumps(label2id))
+  # with open(label2id_file, "w") as label2id_stream:
+  #   label2id_stream.write(json.dumps(label2id))
   return train, dev, test, label2id
 
 
@@ -147,73 +145,92 @@ def get_label2id(model):
   return label2id
   
 
-def sample_filtered_dataset(data: dict, label2id: dict):
-  """Get a sampler for a set of data"""
-  sub_datasets = {c: {"data": [], "tokenized_sents": [], "attn_masks": []}
-                  for c in label2id.keys()}
-  for obs, t, a in zip(data["data"], data["tokenized_sents"], data["attn_masks"]):
-    classes = obs["y_str"]
-    for c in classes:
-      sub_datasets[c]["data"].append(obs)
-      sub_datasets[c]["tokenized_sents"].append(t)
-      sub_datasets[c]["attn_masks"].append(a)
-  #
-  def sample(n):
-    nonlocal sub_datasets
-    sampled_data, tokeinzed_sents, attn_masks = [], [], []
-    for k, v in sub_datasets.items():
-      n_i = min(len(v["data"]), n)  # minimum between n and number of observations
-      sample = np.random.choice(n_i, size=n, replace=False)
-      sampled_data.extend([v["data"][i] for i in sample])
-      tokenized_sents.extend([v["tokenized_sents"][i] for i in sample])
-      attn_masks.extend([v["attn_masks"][i] for i in sample])
-    sampled_data_loader = BertDataset(sampled_data, label2id, len(label2id),
-                                      tokenized_sents, attn_masks)
-    return sampled_data_loader
-  #
-  return sample
+# def sample_filtered_dataset(data: dict, label2id: dict):
+#   """Get a sampler for a set of data"""
+#   #
+#   def sample(n):
+#     sampled_data, tokenized_sents, attn_masks = [], [], []
+#     for k, v in data.items():
+#       n_i = min(len(v["data"]), n)  # minimum between n and number of observations
+#       sample = np.random.choice(n_i, size=n, replace=False)
+#       sampled_data.extend([v["data"][i] for i in sample])
+#       tokenized_sents.extend([v["tokenized_sents"][i] for i in sample])
+#       attn_masks.extend([v["attn_masks"][i] for i in sample])
+#     sampled_data_loader = BertDataset(sampled_data, label2id, len(label2id),
+#                                       tokenized_sents, attn_masks)
+#     return sampled_data_loader
+#   #
+#   return sample
 
+def sample_dataset(data: list, sample_size: int) -> list:
+  sample_size = int(sample_size)
+  if sample_size > len(data):
+    data.extend(np.random.choice(data, sample_size - len(data), replace = False))
+    return np.random.choice(data, sample_size, replace = False)
+  else:
+    return np.random.choice(data, int(sample_size), replace = False)
 
-def read_data(path: str, label2id: dict = dict(), cache_path: str = ""):
+def get_sampled_dataset(data, max_context_side_size, max_entity_size, label2id):
+  sentences = get_sentences(data, max_context_side_size, max_entity_size)
+
+  labels, label2id = get_labels(data, label2id=label2id)
+
+  tokenized_sents, attn_masks = [], []
+  bd = BertDataset(sentences, labels, label_number = len(label2id),
+                    tokenized_sent=tokenized_sents, attn_masks=attn_masks)
+  return bd
+
+def read_data_file(path):
   with open(path, "r") as data_file:
     data = [json.loads(l) for l in data_file.readlines()]
-  tokenized_sents, attn_masks = [], []
-  # if os.path.isfile(cache_path):  # TODO: sostituire a False se la cache ha problemi
-  if False: 
-    with open(cache_path, "r") as cache_file:
-      cache = [json.loads(l) for l in data_file.readlines()]
-    tokenized_sents = [j["tokenized_sent"] for j in cache]
-    attn_masks      = [j["attn_masks"]     for j in cache]
-  elif label2id:
-    bd = BertDataset(data, label2id, len(label2id), tokenized_sents, attn_masks)
-    tokenized_sents, attn_masks = bd.tokenized_sents, bd.attn_masks
-    with open(cache_path, "a") as cache_out:
-      for t, a in zip(tokenized_sents, attn_masks):
-        out_i = {"tokenized_sent": t,
-                 "attn_masks":     a}
-        cache_out.write(json.dumps(out_i) + "\n")
+    return data
+
+
+def read_data_and_sample(model, train_path: str, dev_path: str, test_path: str, label2id: dict = dict()):
+  
+  data = read_data_file(train_path)
+
+  max_context_side_size = model.configuration("MaxContextSideSize", "train")
+  max_entity_size       = model.configuration("MaxEntitySize",      "train")
+
+  if model.configuration("SampleSize", 'test') != 'all':
+    sampled_data = sample_dataset(data, model.configuration("SampleSize", 'test'))
+    
+    train_size = int(len(sampled_data) * 0.8)
+    train_sample_indexes = np.random.choice(len(sampled_data), train_size, replace = False)
+    get_train = lambda x: [obs for i, obs in enumerate(x) if i in train_sample_indexes]
+    get_dev = lambda x: [obs for i, obs in enumerate(x) if i not in train_sample_indexes]
+
+    train_data = get_train(sampled_data)
+    dev_data   = get_dev(sampled_data)
   else:
-    print("Warning: no cache was produced")
-  return data, tokenized_sents, attn_masks
+    train_data = data
+    dev_data = read_data_file(dev_path)
 
 
-def prepare_entity_typing_dataset_sampler(model, train_dev_test: str, label2id: dict):
-  data, tokenized_sents, attn_masks = [], [], []
-  get_cache_file = lambda s, tdt: os.path.join(data[s]["TokenizedDir"], "{}.{}".format(s, tdt))
-  for s in filter(lambda x: "filtered_with_" + dataset_name in x,
-                  data.sections()):
-    pass
-  dataset_name = model.configuration("DatasetName")
+  train_dataset = get_sampled_dataset(train_data, max_context_side_size, max_entity_size, label2id)
+  dev_dataset = get_sampled_dataset(dev_data, max_context_side_size, max_entity_size, label2id)
+
+  test_data = read_data_file(test_path)
+
+  test_dataset = get_sampled_dataset(test_data, max_context_side_size, max_entity_size, label2id)
+
+  train_dataset.label_number = test_dataset.label_number
+  dev_dataset.label_number = test_dataset.label_number
+
+  return train_dataset, dev_dataset, test_dataset
+
+
+def prepare_entity_typing_dataset_and_sample(model, train_dev_test: str, label2id: dict):
   dataset_path = model.configuration("PathInput" + train_dev_test.capitalize(),
-                                     "train" if train_dev_test == "train" else "test")
-  data, tokenized_sents, attn_masks = read_data(dataset_path,
-                                                label2id,
-                                                get_cache_file(dataset_name, train_dev_test))
-  sampler = sample_filtered_dataset({"data":            data,
-                                     "tokenized_sents": tokenized_sents,
-                                     "attn_masks":      attn_masks},
-                                    label2id)
-  return sampler
+                                     "test")
+  dev_path = model.configuration('PathInputDev')
+  test_path = model.configuration("PathInputTest")
+  return read_data_and_sample(model,
+                              dataset_path,
+                              dev_path,
+                              test_path,
+                              label2id)
 
 
 def get_labels(lines, label2id = None, only_labels = False, test = False, label_key = 'y_str'):

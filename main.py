@@ -7,19 +7,15 @@ from collections import defaultdict
 import adapter_entity_typing.network
 from adapter_entity_typing.train import train
 from adapter_entity_typing.test  import test
-from adapter_entity_typing.fine_tuning_train import fine_tune as ft_train
-from adapter_entity_typing.fine_tuning_test  import test  as ft_test
+from adapter_entity_typing.domain_adaptation_train import train_from_scratch
+from adapter_entity_typing.domain_adaptation_test  import test  as test_da
+from adapter_entity_typing.domain_adaptation_utils import get_test_parameters, read_parameters
 
-from adapter_entity_typing.network_classes.classifiers import adapterPLWrapper, EarlyStoppingWithColdStart
-import os
-
-
-def make_experiments(experiments: dict, dataset: list, train_fn, test_fn):
-    # for dataset in datasets:
+def make_experiments(experiments: dict, dataset: list, train_fn, test_fn, param):
     for experiment in experiments[dataset]:
         configuration = adapter_entity_typing.network.read_parameters(experiment,
                                                                     "test",
-                                                                    parameters)
+                                                                    param)
 
         if not configuration("IsTrained?"):
             print("\n\ntraining {}\n\n".format(configuration("TrainingName")))
@@ -27,45 +23,69 @@ def make_experiments(experiments: dict, dataset: list, train_fn, test_fn):
         print("\n\ntesting {}\n\n".format(experiment))
         test_fn(experiment)
 
+def make_from_scratch_experiments(experiments: dict, train_fn, test_fn, param):
+    for experiment, mode in experiments:
+        configuration, conf_dict = read_parameters(experiment,
+                                        "test",
+                                        mode,
+                                        param)
+
+        configuration, conf_dict  = get_test_parameters(experiment, "test", mode, conf_dict, param) 
+        if not configuration("IsTrained?"):
+            print("\n\ntraining {}\n\n".format(configuration("TrainingName")))
+            train_fn(configuration("TrainingName"), experiment, mode, configuration, conf_dict)
+        print("\n\ntesting {}\n\n".format(experiment))
+        # test_fn(experiment)
+
+# def make_domain_adaptation_experiments(experiments: dict, train_fn, test_fn, param):
+#     for experiment in experiments:
+#         configuration = read_parameters(experiment,
+#                                         "test",
+#                                         param)
+#         if not configuration("IsTrained?"):
+#             print("\n\ntraining {}\n\n".format(configuration("TrainingName")))
+#             train_fn(configuration("TrainingName"), experiment)
+#         print("\n\ntesting {}\n\n".format(experiment))
+#         test_fn(experiment)
 
 if __name__ == "__main__":
 
-    # GROUP 1
-    parameters = adapter_entity_typing.network.PARAMETERS
+    # GROUP 1 (training from scratch)
+    # parameters = adapter_entity_typing.network.PARAMETERS
+    # tests = configparser.ConfigParser()
+    # tests.read(parameters["test"][0])
+    # experiments = tests.sections()    
+    # experiments_per_dataset = defaultdict(list)
+    
+    # # 
+    # for experiment in experiments:
+    #     dataset = re.search(r"(?<=_)\w+", tests[experiment]["TrainingName"]).group()
+    #     experiments_per_dataset[dataset].append(experiment)
+        
+    # for dataset in experiments_per_dataset.keys():
+    #     make_experiments(experiments_per_dataset, dataset, train, test, parameters)
+
+
+    # GROUP 2 (training from scratch on samples of datasets (equal to Group 1, but the references to the .ini files change))
+
+    parameters = adapter_entity_typing.domain_adaptation_utils.DOMAIN_ADAPTATION_PARAMETERS
     tests = configparser.ConfigParser()
     tests.read(parameters["test"][0])
-    experiments = tests.sections()    
-    experiments_per_dataset = defaultdict(list)
+    experiments = tests.sections()
+
+    from_scratch_experiments = [(e, tests[e]['DomainAdaptationMode'])  for e in experiments if tests[e]['DomainAdaptationMode'] == 'None']
+
+    make_from_scratch_experiments(from_scratch_experiments, train_from_scratch, test_da, parameters)
     
-    experiments_to_do = []
-    for experiment in experiments:
-        train_dataset = experiment.split('trained_on')[1].split('_')[1]
-        test_dataset = experiment.split('tested_on')[1].split('_')[1]
-        try:
-            filter_dataset = experiment.split('filtered_with')[1].split('_')[1]
-        except:
-            filter_dataset = None
-        if (filter_dataset and train_dataset != test_dataset) or not filter_dataset:
-            experiments_to_do.append(experiment)
-    # 
-    for experiment in experiments_to_do:
-        dataset = re.search(r"(?<=_)\w+", tests[experiment]["TrainingName"]).group()
-        experiments_per_dataset[dataset].append(experiment)
-        
-    for dataset in experiments_per_dataset.keys():
-        make_experiments(experiments_per_dataset, dataset, train, test)
 
+    # # # GROUP 3 (domain adaptation approaches based on pretrained models)
+    parameters = adapter_entity_typing.domain_adaptation_utils.DOMAIN_ADAPTATION_PARAMETERS
+    tests = configparser.ConfigParser()
+    tests.read(parameters["test"][0])
+    experiments = tests.sections()
 
-    # # TODO: GROUP 2
-    # parameters_ft = adapter_entity_typing.network.FINE_TUNING_PARAMETERS
-    # tests = configparser.ConfigParser()
-    # tests.read(parameters_ft)
-    # experiments = tests.sections()[1:]
+    experiments = tests.sections()
 
-    # experiments_per_dataset = defaultdict(list)
-    # for experiment in experiments:
-    #     dataset = experiment.split("_")[1]
-    #     experiments_per_dataset[dataset].append(experiment.lower())
+    domain_adaptation_experiments = [(e, tests[e]['DomainAdaptationMode']) for e in experiments if tests[e]['DomainAdaptationMode'] != 'None']
 
-    # for dataset in experiments_per_dataset.keys():
-    #     make_experiments(experiments_per_dataset, dataset, train_ft, test_ft)
+    make_from_scratch_experiments(domain_adaptation_experiments, train_from_scratch, test_da, parameters)

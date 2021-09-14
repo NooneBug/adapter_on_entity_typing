@@ -22,26 +22,33 @@ if torch.cuda.is_available():
 
 def declare_callbacks_and_trainer(model):
     callbacks = []    
-    experiment_name = model.configuration("ExperimentName")
+    try:
+      experiment_name = model.configuration("ExperimentName", 'train') + '_' + str(model.configuration('SampleSize', 'test'))
+    except:
+      experiment_name = model.configuration("ExperimentName", 'train')
     early_stopping_patience = model.configuration("Patience", "train")
     epochs = model.configuration("MaxEpochs", "train")
     cold_start = model.configuration("ColdStart", "train")
     limit_val_batches = model.configuration("LimitValBatches", "train")
     early_stop_callback = EarlyStoppingWithColdStart(
+                                        monitor='losses/val_loss/dataloader_idx_0',
                                         # monitor='example_macro/macro_f1',
-                                        monitor='macro/macro_f1',
+                                        # monitor='macro/macro_f1',
                                         min_delta=0.00,
                                         patience=early_stopping_patience,
                                         verbose=False,
-                                        mode='max',
+                                        mode='min',
+                                        # mode='max',
                                         strict=True,
                                         cold_start_epochs=cold_start)
     callbacks.append(early_stop_callback)
+    checkpoint_callback = ModelCheckpoint(monitor='losses/val_loss/dataloader_idx_0',
     # checkpoint_callback = ModelCheckpoint(monitor='example_macro/macro_f1',
-    checkpoint_callback = ModelCheckpoint(monitor='macro/macro_f1',
+    # checkpoint_callback = ModelCheckpoint(monitor='macro/macro_f1',
                                           dirpath=model.configuration("PathModel", "train"),
                                           filename=experiment_name,
-                                          mode='max',
+                                          mode='min',
+                                        #   mode='max',
                                           save_last=False)
     callbacks.append(checkpoint_callback)
     logger = TensorBoardLogger(model.configuration("LightningPath", "train"),
@@ -52,8 +59,10 @@ def declare_callbacks_and_trainer(model):
                       logger=logger,
                       gpus = 1, 
                       max_epochs=epochs,
-                      limit_train_batches=300,
+                      limit_train_batches=model.configuration("LimitTrainBatches", "train"),
                       limit_val_batches=limit_val_batches,
+                      # check_val_every_n_epoch = 300,
+                      # weights_summary = 'full',
                       precision = 16)
     return trainer
 

@@ -15,17 +15,15 @@ from result_scripts.import_mappings import import_bbn_mappings, import_choi_mapp
 
 import os
 import regex as re
-from adapter_entity_typing.utils import prepare_entity_typing_datasets, prepare_entity_typing_dataset_sampler, prepare_entity_typing_dataset_only_sentences_and_string_labels, get_label2id
+from adapter_entity_typing.utils import prepare_entity_typing_datasets, prepare_entity_typing_dataset_only_sentences_and_string_labels
 from adapter_entity_typing.network_classes.classifiers import adapterPLWrapper 
 
 
 # the parameters file
 PARAMETERS = {
-    "train": ("train.ini", True),
-    "test":  ("macro_t_test_bbn.ini",  True),
-    "data":  ("data.ini",  True) }
-FINE_TUNING_PARAMETERS = "fine_tuning.ini"
-
+    "train": ("parameters/train.ini", True),
+    "test":  ("parameters/in_domain_test.ini",  True),
+    "data":  ("parameters/data.ini",  True) }
 
 # the device to use 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() \
@@ -43,6 +41,7 @@ MAPPINGS = {
 
 
 def get_pretraineds(train_configuration, pretrained_name):
+    # generates the names of the files of pretrained models (does not read the name)
     folder = train_configuration["PathModel"]
     n = int(train_configuration["n"])
     in_folder = lambda x: os.path.join(folder, x)
@@ -50,7 +49,14 @@ def get_pretraineds(train_configuration, pretrained_name):
                       else "{}.ckpt".format(pretrained_name))
             for i in range(n)]
 
-
+def get_pretraineds_with_k(train_configuration, pretrained_name, k):
+    # generates the names of the files of pretrained models (does not read the name)
+    folder = train_configuration["PathModel"]
+    n = int(train_configuration["n"])
+    in_folder = lambda x: os.path.join(folder, x)
+    return [in_folder("{}_k{}_{}-v{}.ckpt".format(pretrained_name, k, k, i) if i \
+                      else "{}_k{}_{}.ckpt".format(pretrained_name, k, k))
+            for i in range(n)]
 
 def read_parameters(experiment: str,
                     train_or_test: str,
@@ -73,7 +79,10 @@ def read_parameters(experiment: str,
             config[k].read_string(v[0])
     #
     def make_dir(x):
-        path = os.path.normpath(x).split(os.sep)
+        if x[0] != '/':
+            path = os.path.normpath(x).split(os.sep)
+        else:
+            path = os.path.normpath(x).split(os.sep)[1:]
         complete_path = [os.path.join(*path[0:i + 1]) for i in range(len(path))]
         for p in complete_path:
             if not os.path.isdir(p):
@@ -125,6 +134,7 @@ def read_parameters(experiment: str,
         "n":                   int,     # number of istances for the model
         "Patience":            int,     # patience befor early stop
         "ColdStart":           int,     # coldstart for early stopping
+        "LimitTrainBatches":   float,   # number of training set batches per epoch
         "LimitValBatches":     float,   # number of validation set batches per epoch
         "BatchSize":           int,     # batch size for both training and inference
         "LearningRate":        float,   # learning rate
@@ -177,27 +187,32 @@ def manipulate_config(config_name: str,
 
 
 def test_to_train_name(experiment_name):
-    experiment_name = re.sub("FeatureExtraction", "_ft_0", experiment_name)
-    experiment_name = re.sub(r"bertFT(\d+)",   r"bert_ft_\1", experiment_name)
-    experiment_name = re.sub(r"adapters(\d+)", r"adapter_\1", experiment_name)
-    experiment_name = re.sub("FIGER",     "figer", experiment_name)
-    experiment_name = re.sub("Choi",      "choi",  experiment_name)
-    experiment_name = re.sub("BBN",       "bbn",   experiment_name)
-    experiment_name = re.sub("OntoNotes", "onto",  experiment_name)
-    experiment_name = re.sub("trained_on_", "", experiment_name)
-    experiment_name = re.sub(r"tested_on_.+$", "", experiment_name)
-    return re.match(r"(?:adapter_\d+|bert_ft_\d+)_[^_]+", experiment_name).group(0)
+    if 'from_scratch' not in experiment_name:
+        experiment_name = re.sub("FeatureExtraction", "_ft_0", experiment_name)
+        experiment_name = re.sub(r"bertFT(\d+)",   r"bert_ft_\1", experiment_name)
+        experiment_name = re.sub(r"adapters(\d+)", r"adapter_\1", experiment_name)
+        experiment_name = re.sub("FIGER",     "figer", experiment_name)
+        experiment_name = re.sub("Choi",      "choi",  experiment_name)
+        experiment_name = re.sub("BBN",       "bbn",   experiment_name)
+        experiment_name = re.sub("OntoNotes", "onto",  experiment_name)
+        experiment_name = re.sub("trained_on_", "", experiment_name)
+        experiment_name = re.sub(r"tested_on_.+$", "", experiment_name)
+        return re.match(r"(?:adapter_\d+|bert_ft_\d+)_[^_]+", experiment_name).group(0)
+    else:
+        return experiment_name
 
 
 def get_model(experiment_name: str,
               config_file: dict = PARAMETERS,
               pretrained: str = "distilbert-base-uncased"):
+              # pretrained: str = "bert-base-uncased"):
     """Build the model with the configuration for a given experiment."""
     #
     # https://docs.adapterhub.ml/classes/adapter_config.html#transformers.AdapterConfig
     # https://docs.adapterhub.ml/classes/model_mixins.html?highlight=add_adapter#transformers.ModelAdaptersMixin.add_adapter
     #
     config_file = config_file.copy()
+
     new_experiment_name = test_to_train_name(experiment_name)
     if experiment_name != new_experiment_name:
         config_file["train"] = manipulate_config(config_file["train"][0],
@@ -231,19 +246,21 @@ def get_model(experiment_name: str,
     return model
 
 
-def add_classifier(model, labels: dict = {}):
+def add_classifier(model, labels: dict = {}, overwrite_ok = False):
     """Add a classifier to the given model and returns it"""
     model.add_classification_head(
         model.experiment_name,
         num_labels=len(labels),
         layers=model.configuration("ClassificatorLayers", 'train'),
         multilabel = True,
-        id2label=labels)
+        id2label=labels,
+        overwrite_ok = overwrite_ok)
 
 
 def load_model(experiment_name: str,
                config_file: dict = PARAMETERS,
                pretrained: str = "distilbert-base-uncased"):
+              #  pretrained: str = "bert-base-uncased"):
 
     """Load the model for a given EXPERIMENT_NAME."""
     config_file = config_file.copy()
@@ -318,115 +335,55 @@ def load_model(experiment_name: str,
 
         
  
-def get_model_to_finetune(experiment_name: str,
-                          config_file: dict = PARAMETERS,
-                          fine_tuning_file: str = FINE_TUNING_PARAMETERS,
-                          pretrained: str = "distilbert-base-uncased"):
-    """get_model, but it beilives that it is native even when it is not"""
-    config_file = config_file.copy()
-    fine_tuning = configparser.ConfigParser()
-    fine_tuning.read(fine_tuning_file)
-    fine_tuning = fine_tuning[experiment_name]
 
-    test_name = fine_tuning["TestName"]
-    training_name = config_file["test"][0][test_name]["TrainingName"]
-    training_name_sigla = test_to_train(training_name)
+
+
+# def load_model_to_finetune(experiment_name: str,
+#                            config_file: dict = PARAMETERS,
+#                           domain_adaptation_file: str = DOMAIN_ADAPTATION_PARAMETERS,
+#                            pretrained: str = "distilbert-base-uncased"):
+#                           #  pretrained: str = "bert-base-uncased"):
+#     """load_model, but it beilives that it is native even when it is not"""
+#     config_file = config_file.copy()
+#     domain_adaptation = configparser.ConfigParser()
+#     domain_adaptation.read(domain_adaptation_file)
+#     domain_adaptation = domain_adaptation[experiment_name]
     
-    classification_model = get_model(training_name, config_file, pretrained)
-    label2id = get_label2id(classification_model)
-    id2label = {v: k for k, v in label2id.items()}
+#     training_name = config_file["test"][0][fine_tuning_train["TestName"]]["TrainingName"]
+#     training_name_sigla = test_to_train(training_name)
+
+#     config_file["train"] = manipulate_config(config_file["train"][0],
+#                                              training_name,
+#                                              training_name_sigla,
+#                                              **dict(domain_adaptation))
+#     config_file["test"] = manipulate_config(config_file["test"][0],
+#                                             experiment_name,
+#                                             training_name_sigla)
+#     configuration = read_parameters(training_name_sigla,
+#                                     train_or_test = "test",
+#                                     configs = config_file,
+#                                     true_name = experiment_name)
+
+#     data_configuration = configparser.ConfigParser()
+#     data_configuration.read(config_file["data"][0])
+#     _, dev_dataset, test_dataset, label2id = prepare_entity_typing_datasets(classification_model,
+#                                                                             train = False)
     
-    config_file["train"] = manipulate_config(config_file["train"][0],
-                                             training_name,
-                                             training_name_sigla,
-                                             **dict(fine_tuning))
-    
-    configuration = read_parameters(training_name_sigla,
-                                    train_or_test = "train",
-                                    configs = config_file,
-                                    true_name = experiment_name)
-
-    # load best n checkpoints
-    losses_path = os.path.join(
-        config_file["test"][test_name]["PerformanceFile"],
-        "{}_test.txt".format(test_name))
-    with open(losses_path, "r") as losses_file:
-        # 2 = macro_example_f1; 5 = macro_f1; 8 = micro_f1
-        losses = [float(x.split("\t")[2])
-                  for x in losses_file.read().split("\n")]
-    ckpts = list(zip(classification_model.configuration("Traineds", "train"), losses))
-    ckpts.sort(key = lambda x: x[1], reverse = True)
-    ckpts = [ckpt[0] for ckpt in ckpts[0:configuration("n")]]
-
-    # load data
-    training_dataset = classification_model.configuration("DatasetName", "train")
-    data_configuration = configparser.ConfigParser()
-    data_configuration.read(config_file["data"][0])
-    _, dev_dataset, _, label2id = prepare_entity_typing_datasets(classification_model,
-                                                                 train=False, test=False)
-    train_dataset = prepare_entity_typing_dataset_sampler(model, "train", label2id)
-    train_dataset_sampler = lambda: train_dataset(configuration("k", "train"))
-
-    counter = range(1, configuration("n") + 1)
-    for i, ckpt in enumerate(ckpts, 1):
-        print("Loading {} for the {} time".format(ckpt, i))
-        model = adapterPLWrapper.load_from_checkpoint(
-            ckpt,
-            adapterClassifier = classification_model,
-            id2label = id2label)
-        model.to(DEVICE)
-        model.configuration = configuration
-        yield model, train_dataset_sampler(), dev_dataset, label2id
-        if i >= model.configuration("n"):
-            break
+#     native = configuration("DatasetName", "train") == configuration("DatasetName", "test").split("_filtered_with_")[0]
+#     mapping = None
+#     if not native or '_filtered_with_' in configuration("DatasetName", "test"):
+#         native_train    = configuration("DatasetName", "train")
+#         non_native_test = configuration("DatasetName", "test")
+#         if not native:
+#             mapping = MAPPINGS[native_train]()[non_native_test.split('_')[0]]
+#         elif '_filtered_with_' in configuration("DatasetName", "test"):
+#             mapping = MAPPINGS[native_train]()[non_native_test.split('_')[3]]
 
 
-
-def load_model_to_finetune(experiment_name: str,
-                           config_file: dict = PARAMETERS,
-                           fine_tuning_file: str = FINE_TUNING_PARAMETERS,
-                           pretrained: str = "distilbert-base-uncased"):
-    """load_model, but it beilives that it is native even when it is not"""
-    config_file = config_file.copy()
-    fine_tuning = configparser.ConfigParser()
-    fine_tuning.read(fine_tuning_test_file)
-    fine_tuning = fine_tuning_test[experiment_name]
-    
-    training_name = config_file["test"][0][fine_tuning_train["TestName"]]["TrainingName"]
-    training_name_sigla = test_to_train(training_name)
-
-    config_file["train"] = manipulate_config(config_file["train"][0],
-                                             training_name,
-                                             training_name_sigla,
-                                             **dict(fine_tuning))
-    config_file["test"] = manipulate_config(config_file["test"][0],
-                                            experiment_name,
-                                            training_name_sigla)
-    configuration = read_parameters(training_name_sigla,
-                                    train_or_test = "test",
-                                    configs = config_file,
-                                    true_name = experiment_name)
-
-    data_configuration = configparser.ConfigParser()
-    data_configuration.read(config_file["data"][0])
-    _, dev_dataset, test_dataset, label2id = prepare_entity_typing_datasets(classification_model,
-                                                                            train = False)
-    
-    native = configuration("DatasetName", "train") == configuration("DatasetName", "test").split("_filtered_with_")[0]
-    mapping = None
-    if not native or '_filtered_with_' in configuration("DatasetName", "test"):
-        native_train    = configuration("DatasetName", "train")
-        non_native_test = configuration("DatasetName", "test")
-        if not native:
-            mapping = MAPPINGS[native_train]()[non_native_test.split('_')[0]]
-        elif '_filtered_with_' in configuration("DatasetName", "test"):
-            mapping = MAPPINGS[native_train]()[non_native_test.split('_')[3]]
-
-
-    for ckpt in configuration("Traineds"):
-        model = adapterPLWrapper.load_from_checkpoint(
-            ckpt,
-            adapterClassifier = classification_model,
-            id2label = id2label) 
-        model.configuration = configuration
-        yield model, dev_dataset, test_dataset, label2id, mapping
+#     for ckpt in configuration("Traineds"):
+#         model = adapterPLWrapper.load_from_checkpoint(
+#             ckpt,
+#             adapterClassifier = classification_model,
+#             id2label = id2label) 
+#         model.configuration = configuration
+#         yield model, dev_dataset, test_dataset, label2id, mapping
