@@ -11,3 +11,4 @@ results/*
 dataset_filtering.py
 official*
 optimize_macro_t_lightning_logs/
+new_venv*/

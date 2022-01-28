@@ -131,7 +131,7 @@ class adapterPLWrapper(pl.LightningModule):
     return discrete_pred
 
   def compute_f1(self, p, r):	
-      return (2*p*r)/(p + r) if (p + r) else 0
+      return torch.true_divide((2*p*r), (p + r)) if (p + r) else 0
 
 
 class FromScratchPLWrapper(adapterPLWrapper):
@@ -325,53 +325,53 @@ class MyMetrics(Metric):
         assert len(pred_classes) == len(true_classes), "Error in id2label traduction"	
         return pred_classes, true_classes
 
-    def compute_metrics_old(self, pred_classes, true_classes):	
-        correct_counter = 0	
-        prediction_counter = 0	
-        true_labels_counter = 0	
-        precision_sum = 0	
-        recall_sum = 0	
-        f1_sum = 0	
+    # def compute_metrics_old(self, pred_classes, true_classes):	
+    #     correct_counter = 0	
+    #     prediction_counter = 0	
+    #     true_labels_counter = 0	
+    #     precision_sum = 0	
+    #     recall_sum = 0	
+    #     f1_sum = 0	
 
-        void_prediction_counter = 0	
+    #     void_prediction_counter = 0	
 
-        for example_pred, example_true in zip(pred_classes, true_classes):	
+    #     for example_pred, example_true in zip(pred_classes, true_classes):	
 
-            assert len(example_true) > 0, 'Error in true label traduction'	
+    #         assert len(example_true) > 0, 'Error in true label traduction'	
 
-            prediction_counter += len(example_pred)	
+    #         prediction_counter += len(example_pred)	
 
-            true_labels_counter += len(example_true)	
-            if not example_pred:	
-                void_prediction_counter += 1	
-            else:	
-                correct_predictions = len(set(example_pred).intersection(set(example_true)))	
-                correct_counter += correct_predictions	
+    #         true_labels_counter += len(example_true)	
+    #         if not example_pred:	
+    #             void_prediction_counter += 1	
+    #         else:	
+    #             correct_predictions = len(set(example_pred).intersection(set(example_true)))	
+    #             correct_counter += correct_predictions	
 
-                p = correct_predictions / len(example_pred)	
-                r = correct_predictions / len(example_true)	
-                f1 = self.compute_f1(p, r)	
-                precision_sum += p	
-                recall_sum += r	
-                f1_sum += f1
+    #             p = correct_predictions / len(example_pred)	
+    #             r = correct_predictions / len(example_true)	
+    #             f1 = self.compute_f1(p, r)	
+    #             precision_sum += p	
+    #             recall_sum += r	
+    #             f1_sum += f1
 
-        if prediction_counter:
-          micro_p = correct_counter / prediction_counter
-        else:
-          micro_p = 0
-        micro_r = correct_counter / true_labels_counter	
-        micro_f1 = self.compute_f1(micro_p, micro_r)	
+    #     if prediction_counter:
+    #       micro_p = correct_counter / prediction_counter
+    #     else:
+    #       micro_p = 0
+    #     micro_r = correct_counter / true_labels_counter	
+    #     micro_f1 = self.compute_f1(micro_p, micro_r)	
 
-        examples_in_dataset = len(true_classes)	
+    #     examples_in_dataset = len(true_classes)	
 
-        macro_p = precision_sum / examples_in_dataset	
-        macro_r = recall_sum / examples_in_dataset	
-        macro_f1 = self.compute_f1(macro_p, macro_r)	
+    #     macro_p = precision_sum / examples_in_dataset	
+    #     macro_r = recall_sum / examples_in_dataset	
+    #     macro_f1 = self.compute_f1(macro_p, macro_r)	
 
-        avg_pred_number = prediction_counter / examples_in_dataset	
+    #     avg_pred_number = prediction_counter / examples_in_dataset	
 
 
-        return avg_pred_number, void_prediction_counter, micro_p, micro_r, micro_f1, macro_p, macro_r, macro_f1
+    #     return avg_pred_number, void_prediction_counter, micro_p, micro_r, micro_f1, macro_p, macro_r, macro_f1
 
     def update(self, preds: torch.Tensor, target: torch.Tensor):
         p = self.infer_prediction(logits=preds)	
@@ -423,8 +423,8 @@ class MyMetrics(Metric):
         predicted = correct + torch.sum(one_h_dif == -1)
         groundtruth = correct + torch.sum(one_h_dif == 1)
 
-        micro_precision = correct/predicted
-        micro_recall = correct/groundtruth
+        micro_precision = torch.true_divide(correct, predicted)
+        micro_recall = torch.true_divide(correct, groundtruth)
         micro_f1 = self.compute_f1(micro_precision, micro_recall)
 
         # compute macro types metrics
@@ -432,8 +432,8 @@ class MyMetrics(Metric):
         correct_types = torch.sum(one_h_sum == 2, dim = 0)
         groundtruth_types = torch.sum(one_h_sum == 2, dim = 0) + torch.sum(one_h_dif == 1, dim = 0)
 
-        macro_types_precision = torch.mean(self.zero_if_nan(correct_types/predicted_types))
-        macro_types_recall = torch.mean(self.zero_if_nan(correct_types/groundtruth_types))
+        macro_types_precision = torch.mean(self.zero_if_nan(torch.true_divide(correct_types, predicted_types)))
+        macro_types_recall = torch.mean(self.zero_if_nan(torch.true_divide(correct_types, groundtruth_types)))
         macro_types_f1 = self.compute_f1(macro_types_precision, macro_types_recall)
 
         # compute macro example metrics
@@ -441,8 +441,8 @@ class MyMetrics(Metric):
         correct_examples = torch.sum(one_h_sum == 2, dim = 1)
         groundtruth_examples = torch.sum(one_h_sum == 2, dim = 1) + torch.sum(one_h_dif == 1, dim = 1)
 
-        macro_examples_precision = torch.mean(self.zero_if_nan(correct_examples/predicted_examples))
-        macro_examples_recall = torch.mean(self.zero_if_nan(correct_examples/groundtruth_examples))
+        macro_examples_precision = torch.mean(self.zero_if_nan(torch.true_divide(correct_examples, predicted_examples)))
+        macro_examples_recall = torch.mean(self.zero_if_nan(torch.true_divide(correct_examples, groundtruth_examples)))
         macro_exmaples_f1 = self.compute_f1(macro_examples_precision, macro_examples_recall)
 
         prediction_number = torch.sum(pred_classes, dim = 1)
@@ -455,5 +455,5 @@ class MyMetrics(Metric):
             macro_examples_precision, macro_examples_recall, macro_exmaples_f1
 
     def compute_f1(self, p, r):	
-        return (2*p*r)/(p + r) if (p + r) else 0
+        return torch.true_divide((2*p*r), (p + r)) if (p + r) else 0
 

@@ -79,13 +79,13 @@ if __name__ == "__main__":
     
 
     # # # GROUP 3 (domain adaptation approaches based on pretrained models)
-    parameters = adapter_entity_typing.domain_adaptation_utils.DOMAIN_ADAPTATION_PARAMETERS
-    tests = configparser.ConfigParser()
-    tests.read(parameters["test"][0])
-    experiments = tests.sections()
+    # parameters = adapter_entity_typing.domain_adaptation_utils.DOMAIN_ADAPTATION_PARAMETERS
+    # tests = configparser.ConfigParser()
+    # tests.read(parameters["test"][0])
+    # experiments = tests.sections()
 
-    experiments = tests.sections()
+    # experiments = tests.sections()
 
-    domain_adaptation_experiments = [(e, tests[e]['DomainAdaptationMode']) for e in experiments if tests[e]['DomainAdaptationMode'] != 'None']
+    # domain_adaptation_experiments = [(e, tests[e]['DomainAdaptationMode']) for e in experiments if tests[e]['DomainAdaptationMode'] != 'None']
 
-    make_from_scratch_experiments(domain_adaptation_experiments, train_from_scratch, test_da, parameters)
+    # make_from_scratch_experiments(domain_adaptation_experiments, train_from_scratch, test_da, parameters)
