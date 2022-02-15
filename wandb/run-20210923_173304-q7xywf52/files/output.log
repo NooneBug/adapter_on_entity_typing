@@ -1,0 +1,6 @@
+Some weights of the model checkpoint at distilbert-base-uncased were not used when initializing DistilBertModelWithHeads: ['vocab_projector.weight', 'vocab_layer_norm.weight', 'vocab_projector.bias', 'vocab_transform.weight', 'vocab_layer_norm.bias', 'vocab_transform.bias']
+- This IS expected if you are initializing DistilBertModelWithHeads from the checkpoint of a model trained on another task or with another architecture (e.g. initializing a BertForSequenceClassification model from a BertForPreTraining model).
+- This IS NOT expected if you are initializing DistilBertModelWithHeads from the checkpoint of a model that you expect to be exactly identical (initializing a BertForSequenceClassification model from a BertForSequenceClassification model).
+|--------------------------------------------------------------------|
+| Epoch : 1
+| Train epoch:   0%|                                                                                                                                                                         | 0/4 [00:00<?, ?it/s]

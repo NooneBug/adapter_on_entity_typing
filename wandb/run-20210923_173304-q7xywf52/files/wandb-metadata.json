@@ -1,0 +1,27 @@
+{
+    "os": "Linux-5.10.0-1045-oem-x86_64-with-glibc2.29",
+    "python": "3.8.10",
+    "heartbeatAt": "2021-09-23T15:33:05.879371",
+    "startedAt": "2021-09-23T15:33:04.812564",
+    "docker": null,
+    "gpu": "GeForce RTX 3060 Laptop GPU",
+    "gpu_count": 1,
+    "cpu_count": 16,
+    "cuda": null,
+    "args": [
+        "-f",
+        "/home/vime/.local/share/jupyter/runtime/kernel-4ccd5448-6f82-4bba-aaf5-0d62fb7165eb.json"
+    ],
+    "state": "running",
+    "program": "Entity_typing_with_DistilBert.ipynb",
+    "colab": "https://colab.research.google.com/notebook#fileId=1HB5OvOGFhaw10y4hB3iciBrRmNFQagr-",
+    "git": {
+        "remote": "https://github.com/NooneBug/adapter_on_entity_typing.git",
+        "commit": "ae5783b491d7e08ff8512fdf3742bede00818dd3"
+    },
+    "email": null,
+    "root": "/home/vime/Desktop/adapter_on_entity_typing",
+    "host": "vime-Dell-G15-5510",
+    "username": "vime",
+    "executable": "/home/vime/Desktop/adapter_on_entity_typing/venv/bin/python3"
+}

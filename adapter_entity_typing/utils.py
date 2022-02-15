@@ -68,22 +68,35 @@ def prepare_entity_typing_dataset(model, train_dev_test: str = "train", label2id
   
   t = time.time()
   with open(path, "r") as inp:
-    lines = [json.loads(l) for l in tqdm(inp.readlines(), desc = 'reading lines...')]
+      batched_lines = []
+      sentences = []
+      labels = []
+      for l in tqdm(inp.readlines()):
+        if len(batched_lines) < 1000:
+          batched_lines.append(json.loads(l))
+        else:
+          if not only_label2id:
+            sentences.extend(get_sentences(batched_lines, max_context_side_size, max_entity_size))
+          b_labels, label2id = get_labels(batched_lines, label2id=label2id, test = train_dev_test == 'test')
+          labels.extend(b_labels)
 
-  print("... lines red in {:.2f} seconds ...".format(time.time() - t))
+          batched_lines = []
+  #   lines = [json.loads(l) for l in tqdm(inp.readlines(), desc = 'reading lines...')]
 
-  if not only_label2id:
-    sentences = get_sentences(lines, max_context_side_size, max_entity_size)
-  # TODO: riguardare
+  # print("... lines red in {:.2f} seconds ...".format(time.time() - t))
 
-  # native = True
-  # if train_dev_test == "test" and model.configuration("DatasetName", "train") != model.configuration("DatasetName", "test").split("_filtered_with_")[0]:
-    # native = False
+  # if not only_label2id:
+  #   sentences = get_sentences(lines, max_context_side_size, max_entity_size)
+  # # TODO: riguardare
 
-  labels, label2id = get_labels(lines, label2id=label2id, test = train_dev_test == 'test')
+  # # native = True
+  # # if train_dev_test == "test" and model.configuration("DatasetName", "train") != model.configuration("DatasetName", "test").split("_filtered_with_")[0]:
+  #   # native = False
+
+  # labels, label2id = get_labels(lines, label2id=label2id, test = train_dev_test == 'test')
   
-  # labels, label2id = get_labels(lines, label2id=label2id,
-  #                               native=(model.configuration("DatasetName", "train") != model.configuration("DatasetName", "train")))
+  # # labels, label2id = get_labels(lines, label2id=label2id,
+  # #                               native=(model.configuration("DatasetName", "train") != model.configuration("DatasetName", "train")))
 
   if tokenized_dir and not os.path.isdir(tokenized_dir):
     os.mkdir(tokenized_dir)
@@ -185,17 +198,29 @@ def read_data_file(path):
     data = [json.loads(l) for l in data_file.readlines()]
     return data
 
+def get_file_lines_idxs(path):
+  with open(path, "r") as data_file:
+    num_lines = sum(1 for line in data_file)
+    return [i for i in range(num_lines)]
+
 
 def read_data_and_sample(model, train_path: str, dev_path: str, test_path: str, label2id: dict = dict()):
   
-  data = read_data_file(train_path)
+  
 
   max_context_side_size = model.configuration("MaxContextSideSize", "train")
   max_entity_size       = model.configuration("MaxEntitySize",      "train")
 
   if model.configuration("SampleSize", 'test') != 'all':
-    sampled_data = sample_dataset(data, model.configuration("SampleSize", 'test'))
+
+    data = get_file_lines_idxs(train_path)
+
+    sampled_data_idxs = sample_dataset(data, model.configuration("SampleSize", 'test'))
     
+    file = open(train_path, 'r')
+    sampled_data = [json.loads(l) for i, l in enumerate(file.readlines()) if i in sampled_data_idxs]
+    file.close()
+
     train_size = int(len(sampled_data) * 0.8)
     train_sample_indexes = np.random.choice(len(sampled_data), train_size, replace = False)
     get_train = lambda x: [obs for i, obs in enumerate(x) if i in train_sample_indexes]
@@ -204,6 +229,7 @@ def read_data_and_sample(model, train_path: str, dev_path: str, test_path: str, 
     train_data = get_train(sampled_data)
     dev_data   = get_dev(sampled_data)
   else:
+    data = read_data_file(train_path)
     train_data = data
     dev_data = read_data_file(dev_path)
 
@@ -240,9 +266,9 @@ def get_labels(lines, label2id = None, only_labels = False, test = False, label_
     return example_labels
   all_labels = [l for e in example_labels for l in e]
   labels = []
-  print('... generating label set ...')
+  # print('... generating label set ...')
   #
-  for l in tqdm(all_labels):
+  for l in all_labels:
     if l not in labels:
       labels.append(l)
   #
@@ -251,8 +277,8 @@ def get_labels(lines, label2id = None, only_labels = False, test = False, label_
   #
   example_id_labels = []
   #
-  print('... traducing labels in each example ...')
-  for e in tqdm(example_labels):
+  # print('... traducing labels in each example ...')
+  for e in example_labels:
     id_labels = []
     for l in e:
       try:

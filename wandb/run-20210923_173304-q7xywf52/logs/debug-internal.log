@@ -1,0 +1,175 @@
+2021-09-23 17:33:05,502 INFO    MainThread:490485 [internal.py:wandb_internal():86] W&B internal server running at pid: 490485, started at: 2021-09-23 17:33:05.502152
+2021-09-23 17:33:05,505 DEBUG   SenderThread:490485 [sender.py:send():185] send: header
+2021-09-23 17:33:05,505 DEBUG   HandlerThread:490485 [handler.py:handle_request():126] handle_request: check_version
+2021-09-23 17:33:05,505 DEBUG   SenderThread:490485 [sender.py:send_request():199] send_request: check_version
+2021-09-23 17:33:05,506 INFO    WriterThread:490485 [datastore.py:open_for_write():77] open: /home/vime/Desktop/adapter_on_entity_typing/wandb/run-20210923_173304-q7xywf52/run-q7xywf52.wandb
+2021-09-23 17:33:05,629 DEBUG   SenderThread:490485 [sender.py:send():185] send: run
+2021-09-23 17:33:05,865 INFO    SenderThread:490485 [dir_watcher.py:__init__():169] watching files in: /home/vime/Desktop/adapter_on_entity_typing/wandb/run-20210923_173304-q7xywf52/files
+2021-09-23 17:33:05,865 INFO    SenderThread:490485 [sender.py:_start_run_threads():746] run started: q7xywf52 with start time 1632411184
+2021-09-23 17:33:05,866 DEBUG   SenderThread:490485 [sender.py:send():185] send: summary
+2021-09-23 17:33:05,866 DEBUG   HandlerThread:490485 [handler.py:handle_request():126] handle_request: run_start
+2021-09-23 17:33:05,870 INFO    SenderThread:490485 [sender.py:_save_file():879] saving file wandb-summary.json with policy end
+2021-09-23 17:33:05,878 DEBUG   HandlerThread:490485 [meta.py:__init__():40] meta init
+2021-09-23 17:33:05,879 DEBUG   HandlerThread:490485 [meta.py:__init__():54] meta init done
+2021-09-23 17:33:05,879 DEBUG   HandlerThread:490485 [meta.py:probe():211] probe
+2021-09-23 17:33:05,887 DEBUG   HandlerThread:490485 [meta.py:_setup_git():201] setup git
+2021-09-23 17:33:05,914 DEBUG   HandlerThread:490485 [meta.py:_setup_git():208] setup git done
+2021-09-23 17:33:05,915 DEBUG   HandlerThread:490485 [meta.py:_save_pip():58] save pip
+2021-09-23 17:33:05,915 DEBUG   HandlerThread:490485 [meta.py:_save_pip():72] save pip done
+2021-09-23 17:33:05,915 DEBUG   HandlerThread:490485 [meta.py:probe():249] probe done
+2021-09-23 17:33:05,967 DEBUG   SenderThread:490485 [sender.py:send():185] send: files
+2021-09-23 17:33:05,967 INFO    SenderThread:490485 [sender.py:_save_file():879] saving file wandb-metadata.json with policy now
+2021-09-23 17:33:05,973 DEBUG   HandlerThread:490485 [handler.py:handle_request():126] handle_request: stop_status
+2021-09-23 17:33:05,974 DEBUG   SenderThread:490485 [sender.py:send_request():199] send_request: stop_status
+2021-09-23 17:33:05,978 DEBUG   HandlerThread:490485 [handler.py:handle_request():126] handle_request: pause
+2021-09-23 17:33:05,978 INFO    HandlerThread:490485 [handler.py:handle_request_pause():567] stopping system metrics thread
+2021-09-23 17:33:06,240 DEBUG   SenderThread:490485 [sender.py:send():185] send: config
+2021-09-23 17:33:06,240 DEBUG   SenderThread:490485 [sender.py:send():185] send: config
+2021-09-23 17:33:06,240 DEBUG   SenderThread:490485 [sender.py:send():185] send: config
+2021-09-23 17:33:06,240 DEBUG   SenderThread:490485 [sender.py:send():185] send: config
+2021-09-23 17:33:06,240 DEBUG   SenderThread:490485 [sender.py:send():185] send: config
+2021-09-23 17:33:06,240 DEBUG   SenderThread:490485 [sender.py:send():185] send: config
+2021-09-23 17:33:06,241 DEBUG   SenderThread:490485 [sender.py:send():185] send: stats
+2021-09-23 17:33:06,695 INFO    Thread-11 :490485 [upload_job.py:push():137] Uploaded file /tmp/tmpaa_ugxyswandb/aki9kpwm-wandb-metadata.json
+2021-09-23 17:33:06,866 INFO    Thread-8  :490485 [dir_watcher.py:_on_file_created():217] file/dir created: /home/vime/Desktop/adapter_on_entity_typing/wandb/run-20210923_173304-q7xywf52/files/requirements.txt
+2021-09-23 17:33:06,866 INFO    Thread-8  :490485 [dir_watcher.py:_on_file_created():217] file/dir created: /home/vime/Desktop/adapter_on_entity_typing/wandb/run-20210923_173304-q7xywf52/files/wandb-metadata.json
+2021-09-23 17:33:06,866 INFO    Thread-8  :490485 [dir_watcher.py:_on_file_created():217] file/dir created: /home/vime/Desktop/adapter_on_entity_typing/wandb/run-20210923_173304-q7xywf52/files/output.log
+2021-09-23 17:33:06,866 INFO    Thread-8  :490485 [dir_watcher.py:_on_file_created():217] file/dir created: /home/vime/Desktop/adapter_on_entity_typing/wandb/run-20210923_173304-q7xywf52/files/wandb-summary.json
+2021-09-23 17:33:11,301 DEBUG   HandlerThread:490485 [handler.py:handle_request():126] handle_request: resume
+2021-09-23 17:33:11,301 INFO    HandlerThread:490485 [handler.py:handle_request_resume():558] starting system metrics thread
+2021-09-23 17:33:11,302 DEBUG   HandlerThread:490485 [handler.py:handle_request():126] handle_request: pause
+2021-09-23 17:33:11,302 INFO    HandlerThread:490485 [handler.py:handle_request_pause():567] stopping system metrics thread
+2021-09-23 17:33:11,344 DEBUG   SenderThread:490485 [sender.py:send():185] send: stats
+2021-09-23 17:33:12,119 DEBUG   HandlerThread:490485 [handler.py:handle_request():126] handle_request: resume
+2021-09-23 17:33:12,120 INFO    HandlerThread:490485 [handler.py:handle_request_resume():558] starting system metrics thread
+2021-09-23 17:33:17,508 DEBUG   HandlerThread:490485 [handler.py:handle_request():126] handle_request: pause
+2021-09-23 17:33:17,508 INFO    HandlerThread:490485 [handler.py:handle_request_pause():567] stopping system metrics thread
+2021-09-23 17:33:17,610 DEBUG   SenderThread:490485 [sender.py:send():185] send: stats
+2021-09-23 17:33:18,870 INFO    Thread-8  :490485 [dir_watcher.py:_on_file_modified():230] file/dir modified: /home/vime/Desktop/adapter_on_entity_typing/wandb/run-20210923_173304-q7xywf52/files/output.log
+2021-09-23 17:33:20,913 DEBUG   HandlerThread:490485 [handler.py:handle_request():126] handle_request: resume
+2021-09-23 17:33:20,913 INFO    HandlerThread:490485 [handler.py:handle_request_resume():558] starting system metrics thread
+2021-09-23 17:33:21,121 DEBUG   HandlerThread:490485 [handler.py:handle_request():126] handle_request: pause
+2021-09-23 17:33:21,121 INFO    HandlerThread:490485 [handler.py:handle_request_pause():567] stopping system metrics thread
+2021-09-23 17:33:21,165 DEBUG   SenderThread:490485 [sender.py:send():185] send: stats
+2021-09-23 17:33:21,241 DEBUG   HandlerThread:490485 [handler.py:handle_request():126] handle_request: stop_status
+2021-09-23 17:33:21,242 DEBUG   SenderThread:490485 [sender.py:send_request():199] send_request: stop_status
+2021-09-23 17:33:22,872 INFO    Thread-8  :490485 [dir_watcher.py:_on_file_modified():230] file/dir modified: /home/vime/Desktop/adapter_on_entity_typing/wandb/run-20210923_173304-q7xywf52/files/output.log
+2021-09-23 17:33:36,441 DEBUG   HandlerThread:490485 [handler.py:handle_request():126] handle_request: stop_status
+2021-09-23 17:33:36,442 DEBUG   SenderThread:490485 [sender.py:send_request():199] send_request: stop_status
+2021-09-23 17:33:37,881 INFO    Thread-8  :490485 [dir_watcher.py:_on_file_modified():230] file/dir modified: /home/vime/Desktop/adapter_on_entity_typing/wandb/run-20210923_173304-q7xywf52/files/config.yaml
+2021-09-23 17:33:51,708 DEBUG   HandlerThread:490485 [handler.py:handle_request():126] handle_request: stop_status
+2021-09-23 17:33:51,708 DEBUG   SenderThread:490485 [sender.py:send_request():199] send_request: stop_status
+2021-09-23 17:33:58,005 WARNING MainThread:490485 [internal.py:wandb_internal():145] Internal process interrupt: 1
+2021-09-23 17:33:58,061 DEBUG   HandlerThread:490485 [handler.py:handle_request():126] handle_request: poll_exit
+2021-09-23 17:33:58,061 DEBUG   SenderThread:490485 [sender.py:send():185] send: telemetry
+2021-09-23 17:33:58,062 DEBUG   SenderThread:490485 [sender.py:send():185] send: exit
+2021-09-23 17:33:58,062 INFO    SenderThread:490485 [sender.py:send_exit():294] handling exit code: 0
+2021-09-23 17:33:58,062 INFO    SenderThread:490485 [sender.py:send_exit():296] handling runtime: 5
+2021-09-23 17:33:58,065 INFO    SenderThread:490485 [sender.py:_save_file():879] saving file wandb-summary.json with policy end
+2021-09-23 17:33:58,065 INFO    SenderThread:490485 [sender.py:send_exit():306] send defer
+2021-09-23 17:33:58,065 DEBUG   SenderThread:490485 [sender.py:send_request():199] send_request: poll_exit
+2021-09-23 17:33:58,066 DEBUG   HandlerThread:490485 [handler.py:handle_request():126] handle_request: defer
+2021-09-23 17:33:58,066 INFO    HandlerThread:490485 [handler.py:handle_request_defer():143] handle defer: 0
+2021-09-23 17:33:58,066 DEBUG   SenderThread:490485 [sender.py:send_request():199] send_request: defer
+2021-09-23 17:33:58,066 INFO    SenderThread:490485 [sender.py:send_request_defer():315] handle sender defer: 0
+2021-09-23 17:33:58,066 INFO    SenderThread:490485 [sender.py:transition_state():319] send defer: 1
+2021-09-23 17:33:58,066 DEBUG   HandlerThread:490485 [handler.py:handle_request():126] handle_request: defer
+2021-09-23 17:33:58,066 INFO    HandlerThread:490485 [handler.py:handle_request_defer():143] handle defer: 1
+2021-09-23 17:33:58,067 DEBUG   SenderThread:490485 [sender.py:send_request():199] send_request: defer
+2021-09-23 17:33:58,067 INFO    SenderThread:490485 [sender.py:send_request_defer():315] handle sender defer: 1
+2021-09-23 17:33:58,067 INFO    SenderThread:490485 [sender.py:transition_state():319] send defer: 2
+2021-09-23 17:33:58,067 DEBUG   HandlerThread:490485 [handler.py:handle_request():126] handle_request: defer
+2021-09-23 17:33:58,067 INFO    HandlerThread:490485 [handler.py:handle_request_defer():143] handle defer: 2
+2021-09-23 17:33:58,067 DEBUG   SenderThread:490485 [sender.py:send_request():199] send_request: defer
+2021-09-23 17:33:58,067 INFO    SenderThread:490485 [sender.py:send_request_defer():315] handle sender defer: 2
+2021-09-23 17:33:58,067 INFO    SenderThread:490485 [sender.py:transition_state():319] send defer: 3
+2021-09-23 17:33:58,068 DEBUG   HandlerThread:490485 [handler.py:handle_request():126] handle_request: defer
+2021-09-23 17:33:58,068 INFO    HandlerThread:490485 [handler.py:handle_request_defer():143] handle defer: 3
+2021-09-23 17:33:58,068 DEBUG   SenderThread:490485 [sender.py:send():185] send: summary
+2021-09-23 17:33:58,069 INFO    SenderThread:490485 [sender.py:_save_file():879] saving file wandb-summary.json with policy end
+2021-09-23 17:33:58,069 DEBUG   SenderThread:490485 [sender.py:send_request():199] send_request: defer
+2021-09-23 17:33:58,069 INFO    SenderThread:490485 [sender.py:send_request_defer():315] handle sender defer: 3
+2021-09-23 17:33:58,069 INFO    SenderThread:490485 [sender.py:transition_state():319] send defer: 4
+2021-09-23 17:33:58,069 DEBUG   HandlerThread:490485 [handler.py:handle_request():126] handle_request: defer
+2021-09-23 17:33:58,069 INFO    HandlerThread:490485 [handler.py:handle_request_defer():143] handle defer: 4
+2021-09-23 17:33:58,070 DEBUG   SenderThread:490485 [sender.py:send_request():199] send_request: defer
+2021-09-23 17:33:58,070 INFO    SenderThread:490485 [sender.py:send_request_defer():315] handle sender defer: 4
+2021-09-23 17:33:58,171 DEBUG   HandlerThread:490485 [handler.py:handle_request():126] handle_request: poll_exit
+2021-09-23 17:33:58,306 INFO    SenderThread:490485 [sender.py:transition_state():319] send defer: 5
+2021-09-23 17:33:58,306 DEBUG   SenderThread:490485 [sender.py:send_request():199] send_request: poll_exit
+2021-09-23 17:33:58,307 DEBUG   HandlerThread:490485 [handler.py:handle_request():126] handle_request: defer
+2021-09-23 17:33:58,307 INFO    HandlerThread:490485 [handler.py:handle_request_defer():143] handle defer: 5
+2021-09-23 17:33:58,307 DEBUG   SenderThread:490485 [sender.py:send_request():199] send_request: defer
+2021-09-23 17:33:58,307 INFO    SenderThread:490485 [sender.py:send_request_defer():315] handle sender defer: 5
+2021-09-23 17:33:58,307 INFO    SenderThread:490485 [dir_watcher.py:finish():283] shutting down directory watcher
+2021-09-23 17:33:58,408 DEBUG   HandlerThread:490485 [handler.py:handle_request():126] handle_request: poll_exit
+2021-09-23 17:33:58,886 INFO    SenderThread:490485 [dir_watcher.py:_on_file_modified():230] file/dir modified: /home/vime/Desktop/adapter_on_entity_typing/wandb/run-20210923_173304-q7xywf52/files/output.log
+2021-09-23 17:33:58,887 INFO    SenderThread:490485 [dir_watcher.py:_on_file_modified():230] file/dir modified: /home/vime/Desktop/adapter_on_entity_typing/wandb/run-20210923_173304-q7xywf52/files/config.yaml
+2021-09-23 17:33:58,887 INFO    SenderThread:490485 [dir_watcher.py:_on_file_modified():230] file/dir modified: /home/vime/Desktop/adapter_on_entity_typing/wandb/run-20210923_173304-q7xywf52/files/wandb-summary.json
+2021-09-23 17:33:58,887 INFO    SenderThread:490485 [dir_watcher.py:finish():313] scan: /home/vime/Desktop/adapter_on_entity_typing/wandb/run-20210923_173304-q7xywf52/files
+2021-09-23 17:33:58,887 INFO    SenderThread:490485 [dir_watcher.py:finish():327] scan save: /home/vime/Desktop/adapter_on_entity_typing/wandb/run-20210923_173304-q7xywf52/files/wandb-metadata.json wandb-metadata.json
+2021-09-23 17:33:58,887 INFO    SenderThread:490485 [dir_watcher.py:finish():327] scan save: /home/vime/Desktop/adapter_on_entity_typing/wandb/run-20210923_173304-q7xywf52/files/requirements.txt requirements.txt
+2021-09-23 17:33:58,888 INFO    SenderThread:490485 [dir_watcher.py:finish():327] scan save: /home/vime/Desktop/adapter_on_entity_typing/wandb/run-20210923_173304-q7xywf52/files/output.log output.log
+2021-09-23 17:33:58,888 INFO    SenderThread:490485 [dir_watcher.py:finish():327] scan save: /home/vime/Desktop/adapter_on_entity_typing/wandb/run-20210923_173304-q7xywf52/files/config.yaml config.yaml
+2021-09-23 17:33:58,888 INFO    SenderThread:490485 [dir_watcher.py:finish():327] scan save: /home/vime/Desktop/adapter_on_entity_typing/wandb/run-20210923_173304-q7xywf52/files/wandb-summary.json wandb-summary.json
+2021-09-23 17:33:58,888 INFO    SenderThread:490485 [sender.py:transition_state():319] send defer: 6
+2021-09-23 17:33:58,888 DEBUG   SenderThread:490485 [sender.py:send_request():199] send_request: poll_exit
+2021-09-23 17:33:58,889 DEBUG   HandlerThread:490485 [handler.py:handle_request():126] handle_request: defer
+2021-09-23 17:33:58,889 INFO    HandlerThread:490485 [handler.py:handle_request_defer():143] handle defer: 6
+2021-09-23 17:33:58,890 DEBUG   SenderThread:490485 [sender.py:send_request():199] send_request: defer
+2021-09-23 17:33:58,894 INFO    SenderThread:490485 [sender.py:send_request_defer():315] handle sender defer: 6
+2021-09-23 17:33:58,894 INFO    SenderThread:490485 [file_pusher.py:finish():177] shutting down file pusher
+2021-09-23 17:33:58,991 DEBUG   HandlerThread:490485 [handler.py:handle_request():126] handle_request: poll_exit
+2021-09-23 17:33:58,991 DEBUG   SenderThread:490485 [sender.py:send_request():199] send_request: poll_exit
+2021-09-23 17:33:59,094 DEBUG   HandlerThread:490485 [handler.py:handle_request():126] handle_request: poll_exit
+2021-09-23 17:33:59,094 DEBUG   SenderThread:490485 [sender.py:send_request():199] send_request: poll_exit
+2021-09-23 17:33:59,196 DEBUG   HandlerThread:490485 [handler.py:handle_request():126] handle_request: poll_exit
+2021-09-23 17:33:59,197 DEBUG   SenderThread:490485 [sender.py:send_request():199] send_request: poll_exit
+2021-09-23 17:33:59,299 DEBUG   HandlerThread:490485 [handler.py:handle_request():126] handle_request: poll_exit
+2021-09-23 17:33:59,300 DEBUG   SenderThread:490485 [sender.py:send_request():199] send_request: poll_exit
+2021-09-23 17:33:59,404 DEBUG   HandlerThread:490485 [handler.py:handle_request():126] handle_request: poll_exit
+2021-09-23 17:33:59,404 DEBUG   SenderThread:490485 [sender.py:send_request():199] send_request: poll_exit
+2021-09-23 17:33:59,507 DEBUG   HandlerThread:490485 [handler.py:handle_request():126] handle_request: poll_exit
+2021-09-23 17:33:59,508 DEBUG   SenderThread:490485 [sender.py:send_request():199] send_request: poll_exit
+2021-09-23 17:33:59,610 DEBUG   HandlerThread:490485 [handler.py:handle_request():126] handle_request: poll_exit
+2021-09-23 17:33:59,611 DEBUG   SenderThread:490485 [sender.py:send_request():199] send_request: poll_exit
+2021-09-23 17:33:59,713 DEBUG   HandlerThread:490485 [handler.py:handle_request():126] handle_request: poll_exit
+2021-09-23 17:33:59,714 DEBUG   SenderThread:490485 [sender.py:send_request():199] send_request: poll_exit
+2021-09-23 17:33:59,741 INFO    Thread-17 :490485 [upload_job.py:push():137] Uploaded file /home/vime/Desktop/adapter_on_entity_typing/wandb/run-20210923_173304-q7xywf52/files/config.yaml
+2021-09-23 17:33:59,747 INFO    Thread-18 :490485 [upload_job.py:push():137] Uploaded file /home/vime/Desktop/adapter_on_entity_typing/wandb/run-20210923_173304-q7xywf52/files/wandb-summary.json
+2021-09-23 17:33:59,750 INFO    Thread-16 :490485 [upload_job.py:push():137] Uploaded file /home/vime/Desktop/adapter_on_entity_typing/wandb/run-20210923_173304-q7xywf52/files/output.log
+2021-09-23 17:33:59,754 INFO    Thread-15 :490485 [upload_job.py:push():137] Uploaded file /home/vime/Desktop/adapter_on_entity_typing/wandb/run-20210923_173304-q7xywf52/files/requirements.txt
+2021-09-23 17:33:59,817 DEBUG   HandlerThread:490485 [handler.py:handle_request():126] handle_request: poll_exit
+2021-09-23 17:33:59,817 DEBUG   SenderThread:490485 [sender.py:send_request():199] send_request: poll_exit
+2021-09-23 17:33:59,920 DEBUG   HandlerThread:490485 [handler.py:handle_request():126] handle_request: poll_exit
+2021-09-23 17:33:59,921 DEBUG   SenderThread:490485 [sender.py:send_request():199] send_request: poll_exit
+2021-09-23 17:33:59,956 INFO    Thread-7  :490485 [sender.py:transition_state():319] send defer: 7
+2021-09-23 17:33:59,957 DEBUG   HandlerThread:490485 [handler.py:handle_request():126] handle_request: defer
+2021-09-23 17:33:59,958 INFO    HandlerThread:490485 [handler.py:handle_request_defer():143] handle defer: 7
+2021-09-23 17:33:59,958 DEBUG   SenderThread:490485 [sender.py:send_request():199] send_request: defer
+2021-09-23 17:33:59,958 INFO    SenderThread:490485 [sender.py:send_request_defer():315] handle sender defer: 7
+2021-09-23 17:34:00,024 DEBUG   HandlerThread:490485 [handler.py:handle_request():126] handle_request: poll_exit
+2021-09-23 17:34:00,301 INFO    SenderThread:490485 [sender.py:transition_state():319] send defer: 8
+2021-09-23 17:34:00,301 DEBUG   SenderThread:490485 [sender.py:send_request():199] send_request: poll_exit
+2021-09-23 17:34:00,302 DEBUG   HandlerThread:490485 [handler.py:handle_request():126] handle_request: defer
+2021-09-23 17:34:00,302 INFO    HandlerThread:490485 [handler.py:handle_request_defer():143] handle defer: 8
+2021-09-23 17:34:00,303 DEBUG   SenderThread:490485 [sender.py:send_request():199] send_request: defer
+2021-09-23 17:34:00,303 INFO    SenderThread:490485 [sender.py:send_request_defer():315] handle sender defer: 8
+2021-09-23 17:34:00,303 INFO    SenderThread:490485 [sender.py:transition_state():319] send defer: 9
+2021-09-23 17:34:00,304 DEBUG   SenderThread:490485 [sender.py:send():185] send: final
+2021-09-23 17:34:00,305 DEBUG   HandlerThread:490485 [handler.py:handle_request():126] handle_request: defer
+2021-09-23 17:34:00,305 INFO    HandlerThread:490485 [handler.py:handle_request_defer():143] handle defer: 9
+2021-09-23 17:34:00,305 DEBUG   SenderThread:490485 [sender.py:send():185] send: footer
+2021-09-23 17:34:00,306 DEBUG   SenderThread:490485 [sender.py:send_request():199] send_request: defer
+2021-09-23 17:34:00,306 INFO    SenderThread:490485 [sender.py:send_request_defer():315] handle sender defer: 9
+2021-09-23 17:34:00,404 DEBUG   HandlerThread:490485 [handler.py:handle_request():126] handle_request: poll_exit
+2021-09-23 17:34:00,405 DEBUG   SenderThread:490485 [sender.py:send_request():199] send_request: poll_exit
+2021-09-23 17:34:00,405 INFO    SenderThread:490485 [file_pusher.py:join():182] waiting for file pusher
+2021-09-23 17:34:03,011 WARNING MainThread:490485 [internal.py:is_dead():364] Internal process exiting, parent pid 468909 disappeared
+2021-09-23 17:34:03,011 ERROR   MainThread:490485 [internal.py:wandb_internal():141] Internal process shutdown.
+2021-09-23 17:34:03,306 INFO    WriterThread:490485 [datastore.py:close():281] close: /home/vime/Desktop/adapter_on_entity_typing/wandb/run-20210923_173304-q7xywf52/run-q7xywf52.wandb
+2021-09-23 17:34:03,407 INFO    HandlerThread:490485 [handler.py:finish():683] shutting down handler
+2021-09-23 17:34:03,817 INFO    SenderThread:490485 [sender.py:finish():985] shutting down sender
+2021-09-23 17:34:03,818 INFO    SenderThread:490485 [file_pusher.py:finish():177] shutting down file pusher
+2021-09-23 17:34:03,818 INFO    SenderThread:490485 [file_pusher.py:join():182] waiting for file pusher
+2021-09-23 17:34:03,820 INFO    MainThread:490485 [internal.py:handle_exit():76] Internal process exited

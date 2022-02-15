@@ -1,0 +1,46 @@
+wandb_version: 1
+
+_wandb:
+  desc: null
+  value:
+    cli_version: 0.12.2
+    framework: huggingface
+    huggingface_version: 4.8.2
+    is_jupyter_run: true
+    is_kaggle_kernel: false
+    python_version: 3.8.10
+    start_time: 1632411184
+    t:
+      1:
+      - 1
+      - 11
+      2:
+      - 1
+      - 11
+      3:
+      - 1
+      - 19
+      4: 3.8.10
+      5: 0.12.2
+      6: 4.8.2
+      8:
+      - 1
+      - 5
+context_len:
+  desc: null
+  value: 0
+dataset:
+  desc: null
+  value: manual_annotated_only
+epochs:
+  desc: null
+  value: 100
+learning_rate:
+  desc: null
+  value: 0.001
+mention_len:
+  desc: null
+  value: 1
+pos_weight:
+  desc: null
+  value: 3

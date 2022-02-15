@@ -11,7 +11,7 @@ import torch
 BASE_INI_PATH = 'parameters/'
 DOMAIN_ADAPTATION_PARAMETERS = {
                                 "train": (BASE_INI_PATH + "domain_adaptation_train.ini", True),
-                                "test":  (BASE_INI_PATH + "domain_adaptation_test_s_choi.ini",  True),
+                                "test":  (BASE_INI_PATH + "domain_adaptation_test_s_figer.ini",  True),
                                 "data":  (BASE_INI_PATH + "data.ini",  True) 
                                 }
 DEVICE = torch.device("cuda" if torch.cuda.is_available() \

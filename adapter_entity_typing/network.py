@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 
-from torch._C import device
 # from transformers.modeling_bert import BertModelWithHeads
 from transformers.modeling_distilbert import DistilBertModelWithHeads as BertModelWithHeads
 import configparser
@@ -22,7 +21,7 @@ from adapter_entity_typing.network_classes.classifiers import adapterPLWrapper
 # the parameters file
 PARAMETERS = {
     "train": ("parameters/train.ini", True),
-    "test":  ("parameters/in_domain_test.ini",  True),
+    "test":  ("parameters/domain_adaptation_test_s_figer.ini",  True),
     "data":  ("parameters/data.ini",  True) }
 
 # the device to use 

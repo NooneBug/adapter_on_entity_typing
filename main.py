@@ -1,12 +1,8 @@
 #!/usr/bin/env python3
 
 import configparser
-import regex as re
-from collections import defaultdict
 
-import adapter_entity_typing.network
-from adapter_entity_typing.train import train
-from adapter_entity_typing.test  import test
+import adapter_entity_typing
 from adapter_entity_typing.domain_adaptation_train import train_from_scratch
 from adapter_entity_typing.domain_adaptation_test  import test  as test_da
 from adapter_entity_typing.domain_adaptation_utils import get_test_parameters, read_parameters
@@ -79,13 +75,13 @@ if __name__ == "__main__":
     
 
     # # # GROUP 3 (domain adaptation approaches based on pretrained models)
-    parameters = adapter_entity_typing.domain_adaptation_utils.DOMAIN_ADAPTATION_PARAMETERS
-    tests = configparser.ConfigParser()
-    tests.read(parameters["test"][0])
-    experiments = tests.sections()
+    # parameters = adapter_entity_typing.domain_adaptation_utils.DOMAIN_ADAPTATION_PARAMETERS
+    # tests = configparser.ConfigParser()
+    # tests.read(parameters["test"][0])
+    # experiments = tests.sections()
 
-    experiments = tests.sections()
+    # experiments = tests.sections()
 
-    domain_adaptation_experiments = [(e, tests[e]['DomainAdaptationMode']) for e in experiments if tests[e]['DomainAdaptationMode'] != 'None']
+    # domain_adaptation_experiments = [(e, tests[e]['DomainAdaptationMode']) for e in experiments if tests[e]['DomainAdaptationMode'] != 'None']
 
-    make_from_scratch_experiments(domain_adaptation_experiments, train_from_scratch, test_da, parameters)
+    # make_from_scratch_experiments(domain_adaptation_experiments, train_from_scratch, test_da, parameters)
