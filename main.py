@@ -64,24 +64,24 @@ if __name__ == "__main__":
 
     # GROUP 2 (training from scratch on samples of datasets (equal to Group 1, but the references to the .ini files change))
 
-    parameters = adapter_entity_typing.domain_adaptation_utils.DOMAIN_ADAPTATION_PARAMETERS
-    tests = configparser.ConfigParser()
-    tests.read(parameters["test"][0])
-    experiments = tests.sections()
-
-    from_scratch_experiments = [(e, tests[e]['DomainAdaptationMode'])  for e in experiments if tests[e]['DomainAdaptationMode'] == 'None']
-
-    make_from_scratch_experiments(from_scratch_experiments, train_from_scratch, test_da, parameters)
-    
-
-    # # # GROUP 3 (domain adaptation approaches based on pretrained models)
     # parameters = adapter_entity_typing.domain_adaptation_utils.DOMAIN_ADAPTATION_PARAMETERS
     # tests = configparser.ConfigParser()
     # tests.read(parameters["test"][0])
     # experiments = tests.sections()
 
-    # experiments = tests.sections()
+    # from_scratch_experiments = [(e, tests[e]['DomainAdaptationMode'])  for e in experiments if tests[e]['DomainAdaptationMode'] == 'None']
 
-    # domain_adaptation_experiments = [(e, tests[e]['DomainAdaptationMode']) for e in experiments if tests[e]['DomainAdaptationMode'] != 'None']
+    # make_from_scratch_experiments(from_scratch_experiments, train_from_scratch, test_da, parameters)
+    
 
-    # make_from_scratch_experiments(domain_adaptation_experiments, train_from_scratch, test_da, parameters)
+    # # # GROUP 3 (domain adaptation approaches based on pretrained models)
+    parameters = adapter_entity_typing.domain_adaptation_utils.DOMAIN_ADAPTATION_PARAMETERS
+    tests = configparser.ConfigParser()
+    tests.read(parameters["test"][0])
+    experiments = tests.sections()
+
+    experiments = tests.sections()
+
+    domain_adaptation_experiments = [(e, tests[e]['DomainAdaptationMode']) for e in experiments if tests[e]['DomainAdaptationMode'] != 'None']
+
+    make_from_scratch_experiments(domain_adaptation_experiments, train_from_scratch, test_da, parameters)

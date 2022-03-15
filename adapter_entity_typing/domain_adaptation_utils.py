@@ -244,7 +244,8 @@ def load_checkpoint(train_name: str,
     ckpts = list(zip(classification_model.configuration("Traineds", "train"), losses))
     ckpts.sort(key = lambda x: x[1], reverse = True)
     ckpts = [ckpt[0] for ckpt in ckpts[0:configuration("n", 'train')]]
-
+    ckpts = sorted(ckpts)
+    ckpts.insert(0, ckpts.pop())
     # load data
 
     _, _, _, label2id = prepare_entity_typing_datasets(classification_model)

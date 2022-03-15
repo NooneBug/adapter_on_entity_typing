@@ -72,7 +72,7 @@ def prepare_entity_typing_dataset(model, train_dev_test: str = "train", label2id
       sentences = []
       labels = []
       for l in tqdm(inp.readlines()):
-        if len(batched_lines) < 1000:
+        if len(batched_lines) < 50:
           batched_lines.append(json.loads(l))
         else:
           if not only_label2id:
