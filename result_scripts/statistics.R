@@ -45,7 +45,7 @@ get_sd <- function(m) m[[paste0(index, ".sd")]]
 
 get_p_value <- function(mod_1, mod_2, index, n = N) {
   t.val <- (get_mu(mod_1) - get_mu(mod_2)) / (get_sd(mod_1) / sqrt(n))
-  1 - pt(t.val, df = n - 1)
+  1 - pt(abs(t.val) / 2, df = n - 1)
 }
 
 get_stars <- function(score) {
